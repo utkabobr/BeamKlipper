@@ -1,0 +1,699 @@
+package ru.ytkab0bp.beamklipper;
+
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.PendingIntent;
+import android.content.ActivityNotFoundException;
+import android.content.Context;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.Typeface;
+import android.hardware.usb.UsbManager;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.DocumentsContract;
+import android.provider.Settings;
+import android.text.TextUtils;
+import android.util.TypedValue;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.dynamicanimation.animation.FloatValueHolder;
+import androidx.dynamicanimation.animation.SpringAnimation;
+import androidx.dynamicanimation.animation.SpringForce;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.UUID;
+
+import ru.ytkab0bp.beamklipper.events.InstanceCreatedEvent;
+import ru.ytkab0bp.beamklipper.events.InstanceDestroyedEvent;
+import ru.ytkab0bp.beamklipper.events.InstanceUpdatedEvent;
+import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
+import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
+import ru.ytkab0bp.beamklipper.utils.ViewUtils;
+import ru.ytkab0bp.beamklipper.view.EditTextRowView;
+import ru.ytkab0bp.beamklipper.view.HomeView;
+import ru.ytkab0bp.beamklipper.view.KlipperInstanceView;
+import ru.ytkab0bp.beamklipper.view.PermissionRowView;
+import ru.ytkab0bp.beamklipper.view.PreferencesCardView;
+import ru.ytkab0bp.beamklipper.view.RefBadgeView;
+import ru.ytkab0bp.beamklipper.view.SmoothResizeFrameLayout;
+import ru.ytkab0bp.eventbus.EventHandler;
+
+public class MainActivity extends AppCompatActivity {
+    private final static int REQUEST_NOTIFICATIONS = 100;
+    private final static int VIEW_TYPE_HEADER = 0, VIEW_TYPE_INSTANCE = 1, VIEW_TYPE_NEW = 2;
+    private final static Object NOTIFY_LIVE = new Object();
+
+    private HomeView homeView;
+    private MaterialCardView listCardView;
+    private SmoothResizeFrameLayout resizeFrame;
+    private RecyclerView listView;
+    private List<KlipperInstance> instances = new ArrayList<>();
+
+    private SpringAnimation newOrEditAnimation;
+    private LinearLayout newOrEditLayout;
+    private TextView newOrEditTitle;
+    private KlipperInstance editInstance;
+    private EditTextRowView nameRow;
+    private EditTextRowView configRow;
+    private TextView editOpenDirectoryRow;
+    private TextView newOrEditContinue;
+
+    private PreferencesCardView preferencesView;
+
+    private MaterialCardView noPermsLayout;
+    private PermissionRowView batteryRow;
+    private PermissionRowView notificationsRow;
+    private PermissionRowView hideServicesChannelRow;
+
+    private TextView titleView;
+    private FrameLayout badgesLayout;
+    private RefBadgeView[] refBadges = new RefBadgeView[3];
+
+    @SuppressLint("BatteryLife")
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        EdgeToEdge.enable(this);
+        super.onCreate(savedInstanceState);
+
+        FrameLayout fl = new FrameLayout(this);
+
+        homeView = new HomeView(this);
+        badgesLayout = new FrameLayout(this) {
+            @Override
+            protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+                super.onSizeChanged(w, h, oldw, oldh);
+                invalidateHomeProgress(homeView.getProgress());
+            }
+        };
+        badgesLayout.setFitsSystemWindows(true);
+
+        titleView = new TextView(this);
+        titleView.setText(R.string.app_name);
+        titleView.setGravity(Gravity.CENTER_VERTICAL);
+        titleView.setTextColor(ViewUtils.resolveColor(this, android.R.attr.colorAccent));
+        titleView.setTypeface(Typeface.DEFAULT_BOLD);
+        titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        titleView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewUtils.dp(22 + 18)) {{
+            leftMargin = rightMargin = ViewUtils.dp(9);
+        }});
+        badgesLayout.addView(titleView);
+
+        refBadges[0] = new RefBadgeView(this);
+        refBadges[0].setIcon(R.drawable.ic_boosty, R.attr.boostyColor, R.string.badge_boosty);
+        refBadges[0].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://boosty.to/ytkab0bp"))));
+        badgesLayout.addView(refBadges[0]);
+
+        refBadges[1] = new RefBadgeView(this);
+        refBadges[1].setIcon(R.drawable.ic_telegram, R.attr.telegramColor, R.string.badge_telegram);
+        refBadges[1].getIcon().setTranslationX(-ViewUtils.dp(1));
+        refBadges[1].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/ytkab0bp_channel"))));
+        badgesLayout.addView(refBadges[1]);
+
+        refBadges[2] = new RefBadgeView(this);
+        refBadges[2].setIcon(R.drawable.k3d_logo_new_14, 0, R.string.badge_k3d);
+        refBadges[2].getIcon().setPadding(ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8));
+        refBadges[2].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/K_3_D"))));
+        badgesLayout.addView(refBadges[2]);
+
+        listCardView = new MaterialCardView(this);
+        listCardView.setStrokeWidth(ViewUtils.dp(2f));
+        listCardView.setStrokeColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
+        listCardView.setRadius(ViewUtils.dp(32));
+
+        preferencesView = new PreferencesCardView(this);
+
+        homeView.setProgressListener(this::invalidateHomeProgress);
+
+        resizeFrame = new SmoothResizeFrameLayout(this);
+
+        Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        dividerPaint.setColor(ViewUtils.resolveColor(MainActivity.this, R.attr.cardOutlineColor));
+        dividerPaint.setStyle(Paint.Style.STROKE);
+        dividerPaint.setStrokeWidth(ViewUtils.dp(1.5f));
+
+        listView = new RecyclerView(this);
+        listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
+        listView.setLayoutManager(new LinearLayoutManager(this));
+        listView.addItemDecoration(new RecyclerView.ItemDecoration() {
+            @Override
+            public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
+                for (int i = 0; i < parent.getChildCount(); i++) {
+                    View child = parent.getChildAt(i);
+                    if (parent.getChildViewHolder(child).getAdapterPosition() != listView.getAdapter().getItemCount() - 1) {
+                        c.drawLine(ViewUtils.dp(1.5f), child.getY() + child.getHeight() - ViewUtils.dp(1), child.getWidth() - ViewUtils.dp(1.5f), child.getY() + child.getHeight() - ViewUtils.dp(1), dividerPaint);
+                    }
+                }
+            }
+        });
+        listView.setAdapter(new RecyclerView.Adapter() {
+            @NonNull
+            @Override
+            public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+                View v;
+                switch (viewType) {
+                    default:
+                    case VIEW_TYPE_HEADER:
+                        TextView tv = new TextView(MainActivity.this);
+                        tv.setTextColor(ViewUtils.resolveColor(MainActivity.this, android.R.attr.textColorPrimary));
+                        tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+                        tv.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
+                        tv.setGravity(Gravity.CENTER);
+                        tv.setText(R.string.instances);
+                        tv.setPadding(ViewUtils.dp(12), 0, ViewUtils.dp(12), 0);
+                        tv.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+                        v = tv;
+                        break;
+                    case VIEW_TYPE_INSTANCE:
+                        v = new KlipperInstanceView(MainActivity.this);
+                        break;
+                    case VIEW_TYPE_NEW:
+                        LinearLayout ll = new LinearLayout(MainActivity.this);
+                        ll.setOrientation(LinearLayout.HORIZONTAL);
+                        ll.setGravity(Gravity.CENTER);
+                        ll.setBackground(ViewUtils.resolveDrawable(MainActivity.this, android.R.attr.selectableItemBackground));
+                        ll.setPadding(0, ViewUtils.dp(16), 0, ViewUtils.dp(16));
+                        ll.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+
+                        ImageView add = new ImageView(MainActivity.this);
+                        add.setImageResource(R.drawable.ic_add_outline_28);
+                        add.setColorFilter(ViewUtils.resolveColor(MainActivity.this, android.R.attr.textColorSecondary));
+                        ll.addView(add, new LinearLayout.LayoutParams(ViewUtils.dp(22), ViewUtils.dp(22)) {{
+                            setMarginEnd(ViewUtils.dp(8));
+                        }});
+
+                        TextView title = new TextView(MainActivity.this);
+                        title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+                        title.setTextColor(ViewUtils.resolveColor(MainActivity.this, android.R.attr.textColorPrimary));
+                        title.setText(R.string.new_instance);
+                        title.setGravity(Gravity.CENTER);
+                        ll.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+                        v = ll;
+                        break;
+                }
+                return new RecyclerView.ViewHolder(v) {};
+            }
+
+            /** @noinspection unchecked*/
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
+                if (payloads.contains(NOTIFY_LIVE)) {
+                    KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
+                    view.bind(instances.get(position - 1));
+                    return;
+                }
+                super.onBindViewHolder(holder, position, payloads);
+            }
+
+            @Override
+            public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+                switch (getItemViewType(position)) {
+                    case VIEW_TYPE_INSTANCE:
+                        KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
+                        KlipperInstance inst = instances.get(position - 1);
+                        view.bind(inst);
+                        view.setOnClickListener(v -> {
+                            newOrEditTitle.setText(R.string.edit_instance);
+                            editInstance = inst;
+                            editOpenDirectoryRow.setVisibility(View.VISIBLE);
+                            nameRow.bind(R.string.instance_name, inst.name);
+                            configRow.setVisibility(View.GONE);
+                            animateNewOrEditLayout(true);
+                            newOrEditContinue.setText(R.string.instance_ok);
+                        });
+                        view.setOnLongClickListener(v -> {
+                            new MaterialAlertDialogBuilder(MainActivity.this)
+                                    .setTitle(getString(R.string.instance_delete, inst.name))
+                                    .setMessage(R.string.instance_delete_confirm)
+                                    .setNegativeButton(android.R.string.cancel, null)
+                                    .setPositiveButton(android.R.string.ok, (dialog, which) -> KlipperApp.DATABASE.delete(inst))
+                                    .show();
+                            return true;
+                        });
+                        break;
+                    case VIEW_TYPE_NEW:
+                        holder.itemView.setOnClickListener(v -> {
+                            newOrEditTitle.setText(R.string.new_instance);
+                            editInstance = null;
+                            editOpenDirectoryRow.setVisibility(View.GONE);
+                            nameRow.bind(R.string.instance_name, null);
+                            configRow.bind(R.string.instance_config, null);
+                            configRow.setVisibility(View.VISIBLE);
+                            newOrEditContinue.setText(R.string.instance_create);
+                            animateNewOrEditLayout(true);
+                        });
+                        break;
+                }
+            }
+
+            @Override
+            public int getItemViewType(int position) {
+                return position == 0 ? VIEW_TYPE_HEADER : position == getItemCount() - 1 ? VIEW_TYPE_NEW : VIEW_TYPE_INSTANCE;
+            }
+
+            @Override
+            public int getItemCount() {
+                return instances.size() + 2;
+            }
+        });
+        resizeFrame.addView(listView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        newOrEditLayout = new LinearLayout(MainActivity.this) {
+            {
+                setWillNotDraw(false);
+            }
+
+            @Override
+            public void draw(@NonNull Canvas canvas) {
+                super.draw(canvas);
+
+                for (int i = 0; i < getChildCount() - 1; i++) {
+                    View child = getChildAt(i);
+                    if (child.getVisibility() == View.VISIBLE) {
+                        canvas.drawLine(ViewUtils.dp(1.5f), child.getY() + child.getHeight() - ViewUtils.dp(1), child.getWidth() - ViewUtils.dp(1.5f), child.getY() + child.getHeight() - ViewUtils.dp(1), dividerPaint);
+                    }
+                }
+            }
+        };
+        newOrEditLayout.setOrientation(LinearLayout.VERTICAL);
+        newOrEditLayout.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+
+        newOrEditTitle = new TextView(this);
+        newOrEditTitle.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
+        newOrEditTitle.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
+        newOrEditTitle.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
+        newOrEditTitle.setGravity(Gravity.CENTER);
+        newOrEditTitle.setPadding(ViewUtils.dp(12), 0, ViewUtils.dp(12), 0);
+        newOrEditTitle.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        newOrEditTitle.setOnClickListener(v -> animateNewOrEditLayout(false));
+        newOrEditLayout.addView(newOrEditTitle);
+
+        nameRow = new EditTextRowView(this);
+        nameRow.setOnClickListener(v -> {
+            FrameLayout frame = new FrameLayout(v.getContext());
+            frame.setPadding(ViewUtils.dp(21), 0, ViewUtils.dp(21), 0);
+            EditText et = new EditText(v.getContext());
+            et.setText(nameRow.getText());
+            frame.addView(et);
+            new MaterialAlertDialogBuilder(v.getContext())
+                    .setTitle(R.string.instance_name)
+                    .setView(frame)
+                    .setNegativeButton(android.R.string.cancel, null)
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> nameRow.bind(R.string.instance_name, et.getText().toString()))
+                    .show();
+        });
+        newOrEditLayout.addView(nameRow);
+
+        configRow = new EditTextRowView(this);
+        configRow.setOnClickListener(v -> {
+            File config = new File(KlipperApp.INSTANCE.getFilesDir(), "klipper/config");
+            List<String> filesList = new ArrayList<>();
+            for (File f : config.listFiles()) {
+                filesList.add(f.getName());
+            }
+            new MaterialAlertDialogBuilder(v.getContext())
+                    .setTitle(R.string.instance_config)
+                    .setItems(filesList.toArray(new String[0]), (dialog, which) -> configRow.bind(R.string.instance_config, filesList.get(which)))
+                    .show();
+        });
+        newOrEditLayout.addView(configRow);
+
+        editOpenDirectoryRow = new TextView(this);
+        editOpenDirectoryRow.setText(R.string.edit_open_directory);
+        editOpenDirectoryRow.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
+        editOpenDirectoryRow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        editOpenDirectoryRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        editOpenDirectoryRow.setPadding(ViewUtils.dp(21), 0, ViewUtils.dp(21), 0);
+        editOpenDirectoryRow.setBackground(ViewUtils.resolveDrawable(this, android.R.attr.selectableItemBackground));
+        editOpenDirectoryRow.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        editOpenDirectoryRow.setOnClickListener(v -> {
+            Uri uri = DocumentsContract.buildRootUri("ru.ytkab0bp.beamklipper", editInstance.id);
+            try {
+                try {
+                    try {
+                        startActivity(new Intent("android.intent.action.VIEW").setDataAndType(uri, DocumentsContract.Document.MIME_TYPE_DIR));
+                    } catch (ActivityNotFoundException unused) {
+                        startActivity(new Intent("android.provider.action.BROWSE").setDataAndType(uri, DocumentsContract.Document.MIME_TYPE_DIR));
+                    }
+                } catch (ActivityNotFoundException unused2) {
+                    startActivity(new Intent("android.provider.action.BROWSE_DOCUMENT_ROOT").setDataAndType(uri, DocumentsContract.Document.MIME_TYPE_DIR));
+                }
+            } catch (ActivityNotFoundException ignored) {}
+        });
+        newOrEditLayout.addView(editOpenDirectoryRow);
+
+        newOrEditContinue = new TextView(this);
+        newOrEditContinue.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
+        newOrEditContinue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        newOrEditContinue.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
+        newOrEditContinue.setGravity(Gravity.CENTER);
+        newOrEditContinue.setPadding(ViewUtils.dp(12), 0, ViewUtils.dp(12), 0);
+        newOrEditContinue.setBackground(ViewUtils.resolveDrawable(this, android.R.attr.selectableItemBackground));
+        newOrEditContinue.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        newOrEditContinue.setOnClickListener(v -> {
+            if (TextUtils.isEmpty(nameRow.getText())) {
+                new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle(R.string.error)
+                        .setMessage(R.string.error_name_empty)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                return;
+            }
+
+            if (editInstance != null) {
+                editInstance.name = nameRow.getText().toString().trim();
+                KlipperApp.DATABASE.update(editInstance);
+                editInstance = null;
+                animateNewOrEditLayout(false);
+                return;
+            }
+
+            if (TextUtils.isEmpty(configRow.getText())) {
+                new MaterialAlertDialogBuilder(MainActivity.this)
+                        .setTitle(R.string.error)
+                        .setMessage(R.string.error_config_empty)
+                        .setPositiveButton(android.R.string.ok, null)
+                        .show();
+                return;
+            }
+
+            KlipperInstance inst = new KlipperInstance();
+            inst.id = UUID.randomUUID().toString();
+            inst.name = nameRow.getText().toString().trim();
+            File cfg = new File(inst.getPublicDirectory(), "config/printer.cfg");
+            cfg.getParentFile().mkdirs();
+            try {
+                FileInputStream fis = new FileInputStream(new File(KlipperApp.INSTANCE.getFilesDir(), "klipper/config/" + configRow.getText().toString()));
+                FileOutputStream fos = new FileOutputStream(cfg);
+                byte[] buffer = new byte[10240]; int c;
+                while ((c = fis.read(buffer)) != -1) {
+                    fos.write(buffer, 0, c);
+                }
+                fis.close();
+                fos.close();
+            } catch (Exception ignored) {}
+            KlipperApp.DATABASE.insert(inst);
+            animateNewOrEditLayout(false);
+        });
+        newOrEditLayout.addView(newOrEditContinue);
+
+        newOrEditLayout.setVisibility(View.GONE);
+        resizeFrame.addView(newOrEditLayout);
+
+        listCardView.addView(resizeFrame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
+        homeView.addView(listCardView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER) {{
+            leftMargin = topMargin = rightMargin = bottomMargin = ViewUtils.dp(21);
+        }});
+        homeView.addView(preferencesView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        homeView.addView(badgesLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) {{
+            topMargin = ViewUtils.dp(12);
+            leftMargin = rightMargin = ViewUtils.dp(12);
+        }});
+
+        fl.addView(homeView);
+
+        noPermsLayout = new MaterialCardView(this);
+        noPermsLayout.setStrokeWidth(ViewUtils.dp(2f));
+        noPermsLayout.setStrokeColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
+        noPermsLayout.setRadius(ViewUtils.dp(32));
+        LinearLayout ll = new LinearLayout(this);
+        ll.setOrientation(LinearLayout.VERTICAL);
+
+        batteryRow = new PermissionRowView(this);
+        batteryRow.bind(R.string.battery_optimization_exclusion, PermissionsChecker.hasBatteryPerm(), true);
+        batteryRow.setPadding(batteryRow.getPaddingLeft(), ViewUtils.dp(6), batteryRow.getPaddingRight(), batteryRow.getPaddingBottom());
+        batteryRow.setOnClickListener(v -> {
+            PermissionRowView r = (PermissionRowView) v;
+            if (!r.isChecked()) {
+                startActivity(new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", getPackageName(), null)));
+            }
+        });
+        ll.addView(batteryRow);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationsRow = new PermissionRowView(this);
+            notificationsRow.bind(R.string.notifications, PermissionsChecker.hasNotificationPerm(), true);
+            notificationsRow.setOnClickListener(v -> {
+                PermissionRowView r = (PermissionRowView) v;
+                if (!r.isChecked()) {
+                    requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS}, REQUEST_NOTIFICATIONS);
+                }
+            });
+            ll.addView(notificationsRow);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            hideServicesChannelRow = new PermissionRowView(this);
+            hideServicesChannelRow.bind(R.string.notifications_hide_channel, PermissionsChecker.isNotificationsChannelHidden(), true);
+            hideServicesChannelRow.setOnClickListener(v -> {
+                PermissionRowView r = (PermissionRowView) v;
+                if (!r.isChecked()) {
+                    Toast.makeText(this, getString(R.string.notifications_hide_channel_info, getString(R.string.channel_services)), Toast.LENGTH_SHORT).show();
+                    startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
+                            .putExtra(Settings.EXTRA_CHANNEL_ID, KlipperApp.SERVICES_CHANNEL));
+                }
+            });
+            ll.addView(hideServicesChannelRow);
+        }
+
+        PermissionRowView row = new PermissionRowView(this);
+        row.titleView.setGravity(Gravity.CENTER);
+        row.titleView.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
+        row.titleView.setText(R.string.next);
+        row.mSwitch.setVisibility(View.GONE);
+        row.setPadding(row.getPaddingLeft(), ViewUtils.dp(14), row.getPaddingRight(), ViewUtils.dp(14));
+        row.setOnClickListener(v -> {
+            if (PermissionsChecker.needBlockStart()) return;
+            animateHomeView();
+        });
+        ll.addView(row);
+
+        noPermsLayout.addView(ll);
+        fl.addView(noPermsLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER) {{
+            leftMargin = topMargin = rightMargin = bottomMargin = ViewUtils.dp(21);
+        }});
+
+        noPermsLayout.setVisibility(PermissionsChecker.needBlockStart() ? View.VISIBLE : View.GONE);
+        homeView.setVisibility(PermissionsChecker.needBlockStart() ? View.GONE : View.VISIBLE);
+
+        fl.setBackgroundColor(ViewUtils.resolveColor(this, android.R.attr.windowBackground));
+        setContentView(fl);
+
+        processIntent(getIntent());
+        instances = new ArrayList<>(KlipperInstance.getInstances());
+        KlipperApp.EVENT_BUS.registerListener(this);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if (newOrEditLayout.getVisibility() != View.GONE) {
+            animateNewOrEditLayout(false);
+            return;
+        }
+        if (homeView.getProgress() != 0) {
+            homeView.animateTo(0);
+            return;
+        }
+        super.onBackPressed();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+
+        KlipperApp.EVENT_BUS.unregisterListener(this);
+    }
+
+    private void invalidateHomeProgress(float progress) {
+        float beb = 0.3f;
+        float posProgress = Math.max(0, progress);
+        for (int i = 0; i < refBadges.length; i++) {
+            int j = refBadges.length - 1 - i;
+            float pr = (Math.max(posProgress, beb * j) - beb * j) / (1f - beb * j);
+
+            RefBadgeView badge = refBadges[i];
+            badge.setProgress(pr);
+
+            float fX = -ViewUtils.dp(9) + badgesLayout.getWidth() - ViewUtils.dp(22 + 18) * (i + 1) - ViewUtils.dp(8) * i;
+            float tX = 0;
+
+            float fY = 0;
+            float tY = ViewUtils.dp(92) + ViewUtils.dp(22 + 18 + 10) * i;
+
+            badge.setTranslationX(ViewUtils.lerp(fX, tX, pr));
+            badge.setTranslationY(ViewUtils.lerp(fY, tY, pr));
+        }
+        titleView.setTranslationX(posProgress * (badgesLayout.getWidth() - titleView.getWidth()) / 2f);
+        titleView.setTranslationY(posProgress * ViewUtils.dp(92 - 52));
+
+        float negProgress = Math.min(0, progress);
+        listCardView.setTranslationY(progress * ViewUtils.dp(92 + (22 + 18) * refBadges.length + (10) * (refBadges.length - 1)));
+        listCardView.setAlpha(1f + negProgress);
+
+        preferencesView.setProgress(-negProgress);
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onInstanceCreated(InstanceCreatedEvent e) {
+        instances.add(KlipperInstance.getInstance(e.id));
+        listView.getAdapter().notifyItemInserted(listView.getAdapter().getItemCount() - 2);
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onInstanceUpdated(InstanceUpdatedEvent e) {
+        int i = -1;
+        for (int j = 0; j < instances.size(); j++) {
+            KlipperInstance inst = instances.get(j);
+            if (Objects.equals(inst.id, e.id)) {
+                i = j;
+                instances.set(i, KlipperInstance.getInstance(inst.id));
+                break;
+            }
+        }
+        if (i != -1) {
+            listView.getAdapter().notifyItemChanged(i + 1, NOTIFY_LIVE);
+        }
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onInstanceDestroyed(InstanceDestroyedEvent e) {
+        int i = -1;
+        for (int j = 0; j < instances.size(); j++) {
+            KlipperInstance inst = instances.get(j);
+            if (Objects.equals(inst.id, e.id)) {
+                i = j;
+                break;
+            }
+        }
+        if (i != -1) {
+            instances.remove(i);
+            listView.getAdapter().notifyItemRemoved(i + 1);
+        }
+    }
+
+    private void animateNewOrEditLayout(boolean visible) {
+        if (newOrEditAnimation != null) {
+            return;
+        }
+        if (visible) {
+            resizeFrame.addForceNotMeasure(listView);
+            newOrEditLayout.setVisibility(View.VISIBLE);
+            newOrEditLayout.setAlpha(0);
+        } else {
+            resizeFrame.addForceNotMeasure(newOrEditLayout);
+            listView.setVisibility(View.VISIBLE);
+            listView.setAlpha(0);
+        }
+        newOrEditAnimation = new SpringAnimation(new FloatValueHolder(visible ? 0 : 1))
+                .setMinimumVisibleChange(1 / 256f)
+                .setSpring(new SpringForce(visible ? 1 : 0)
+                        .setStiffness(1000f)
+                        .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                .addUpdateListener((animation, value, velocity) -> {
+                    listView.setAlpha(1f - value);
+                    newOrEditLayout.setAlpha(value);
+                })
+                .addEndListener((animation, canceled, value, velocity) -> {
+                    if (visible) {
+                        listView.setVisibility(View.GONE);
+                        resizeFrame.removeForceNotMeasure(listView);
+                    } else {
+                        newOrEditLayout.setVisibility(View.GONE);
+                        resizeFrame.removeForceNotMeasure(newOrEditLayout);
+                    }
+                    newOrEditAnimation = null;
+                });
+        newOrEditAnimation.start();
+    }
+
+    private void animateHomeView() {
+        SpringAnimation anim = new SpringAnimation(new FloatValueHolder(0))
+                .setMinimumVisibleChange(1 / 256f)
+                .setSpring(new SpringForce(1)
+                        .setStiffness(1000)
+                        .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
+                .addUpdateListener((animation, value, velocity) -> {
+                    homeView.setPivotX(homeView.getWidth() / 2f);
+                    homeView.setPivotY(homeView.getHeight() / 2f);
+
+                    homeView.setPivotX(homeView.getWidth() / 2f);
+                    homeView.setPivotY(homeView.getHeight() / 2f);
+
+                    noPermsLayout.setScaleX(ViewUtils.lerp(1f, 0.6f, value));
+                    noPermsLayout.setScaleY(ViewUtils.lerp(1f, 0.6f, value));
+                    noPermsLayout.setAlpha(1f - value);
+
+                    homeView.setScaleX(ViewUtils.lerp(0.6f, 1f, value));
+                    homeView.setScaleY(ViewUtils.lerp(0.6f, 1f, value));
+                    homeView.setAlpha(value);
+                })
+                .addEndListener((animation, canceled, value, velocity) -> noPermsLayout.setVisibility(View.GONE));
+        homeView.setVisibility(View.VISIBLE);
+        anim.start();
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+        if (requestCode == REQUEST_NOTIFICATIONS && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+            notificationsRow.setChecked(true);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        batteryRow.setChecked(PermissionsChecker.hasBatteryPerm());
+        hideServicesChannelRow.setChecked(PermissionsChecker.isNotificationsChannelHidden());
+    }
+
+    @Override
+    protected void onNewIntent(@NonNull Intent intent) {
+        super.onNewIntent(intent);
+        processIntent(intent);
+    }
+
+    private void processIntent(Intent intent) {
+        if (intent != null && intent.getAction() != null && intent.getAction().equals(UsbManager.ACTION_USB_DEVICE_ATTACHED)) {
+            UsbSerialProber prober = new UsbSerialProber(KlipperProbeTable.getInstance());
+            UsbManager manager = (UsbManager) getSystemService(Context.USB_SERVICE);
+            for (UsbSerialDriver drv : prober.findAllDrivers(manager)) {
+                if (!manager.hasPermission(drv.getDevice())) {
+                    manager.requestPermission(drv.getDevice(), PendingIntent.getBroadcast(this, 0, new Intent(UsbSerialManager.ACTION_ON_DEVICE_CONNECTED).setPackage(getPackageName()), PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_NO_CREATE));
+                } else {
+                    sendBroadcast(new Intent(UsbSerialManager.ACTION_ON_DEVICE_CONNECTED).putExtra(UsbManager.EXTRA_DEVICE, drv.getDevice()).putExtra(UsbManager.EXTRA_PERMISSION_GRANTED, true).setPackage(getPackageName()));
+                }
+            }
+        }
+    }
+}

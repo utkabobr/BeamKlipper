@@ -1,0 +1,12 @@
+[submodule "app/src/main/klipper"]
+	path = app/src/main/klipper
+	url = https://github.com/utkabobr/klipper
+[submodule "app/src/main/moonraker"]
+	path = app/src/main/moonraker
+	url = https://github.com/utkabobr/moonraker
+[submodule "EventBus"]
+	path = EventBus
+	url = https://github.com/utkabobr/eventbus
+[submodule "app/src/main/happyhare"]
+	path = app/src/main/happyhare
+	url = https://github.com/moggieuk/Happy-Hare

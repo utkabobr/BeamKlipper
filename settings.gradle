@@ -1,0 +1,6 @@
+rootProject.name = "BeamKlipper"
+include ':app', ':eventbus', ':eventbus_api', ':eventbus_processor'
+
+project(':eventbus').projectDir = file('EventBus/eventbus')
+project(':eventbus_api').projectDir = file('EventBus/eventbus_api')
+project(':eventbus_processor').projectDir = file('EventBus/eventbus_processor')

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">Beam Klipper</string>
+    <string name="instance_n">%s</string>
+    <string name="channel_services">Services</string>
+    <string name="klippy_title">Klippy (%s)</string>
+    <string name="klippy_description">Klippy is running in background…</string>
+    <string name="moonraker_title">Moonraker (%s)</string>
+    <string name="moonraker_description">Moonraker is running in background…</string>
+    <string name="web_title">Web server</string>
+    <string name="web_description">Web server is running in background…</string>
+    <string name="camera_title">Camera server</string>
+    <string name="camera_description">Camera server is running in background…</string>
+    <string name="battery_optimization_exclusion">Battery optimization exclusion</string>
+    <string name="notifications">Notifications</string>
+    <string name="notifications_hide_channel">Hide notifications channel</string>
+    <string name="notifications_hide_channel_info">You need to disable «%s» channel</string>
+    <string name="next">Next</string>
+    <string name="instances">Instances</string>
+    <string name="instance_starting">Starting…</string>
+    <string name="instance_stopping">Stopping…</string>
+    <string name="instance_name">Name</string>
+    <string name="instance_config">Config</string>
+    <string name="instance_create">Create</string>
+    <string name="instance_delete">Delete «%s»?</string>
+    <string name="instance_delete_confirm">Are you sure?</string>
+    <string name="instance_ok">OK</string>
+    <string name="new_instance">New instance</string>
+    <string name="edit_instance">Edit instance</string>
+    <string name="edit_open_directory">Open instance folder</string>
+    <string name="no_free_slots">No free slots</string>
+    <string name="no_free_slots_description">Only up to %d instances can be running at the same time</string>
+    <string name="error">Error</string>
+    <string name="error_name_empty">Name can not be empty</string>
+    <string name="error_config_empty">Select a config</string>
+    <string name="badge_boosty">Support developer on Boosty</string>
+    <string name="badge_telegram">Subscribe on Telegram</string>
+    <string name="badge_k3d">K3D Chat</string>
+    <string name="settings">Settings</string>
+    <string name="camera">Camera</string>
+    <string name="enable_camera">Enable camera server</string>
+    <string name="usb" translatable="false">USB</string>
+    <string name="usb_list">List USB devices</string>
+    <string name="usb_list_title">USB devices</string>
+    <string name="usb_list_no_devices">USB devices not found</string>
+</resources>

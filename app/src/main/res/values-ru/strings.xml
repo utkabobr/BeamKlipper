@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="instance_n">%s</string>
+    <string name="channel_services">Сервисы</string>
+    <string name="klippy_title">Klippy (%s)</string>
+    <string name="klippy_description">Klippy работает в фоне…</string>
+    <string name="moonraker_title">Moonraker (%s)</string>
+    <string name="moonraker_description">Moonraker работает в фоне…</string>
+    <string name="web_title">Веб сервер</string>
+    <string name="web_description">Веб сервер работает в фоне…</string>
+    <string name="camera_title">Сервер камеры</string>
+    <string name="camera_description">Сервер камеры работает в фоне…</string>
+    <string name="battery_optimization_exclusion">Исключение оптимизации батареи</string>
+    <string name="notifications">Уведомления</string>
+    <string name="notifications_hide_channel">Скрытие канала уведомлений</string>
+    <string name="notifications_hide_channel_info">Вам нужно отключить канал «%s»</string>
+    <string name="next">Дальше</string>
+    <string name="instances">Установки</string>
+    <string name="instance_starting">Запуск…</string>
+    <string name="instance_stopping">Остановка…</string>
+    <string name="instance_name">Имя</string>
+    <string name="instance_config">Конфиг</string>
+    <string name="instance_create">Создать</string>
+    <string name="instance_delete">Удалить «%s»?</string>
+    <string name="instance_delete_confirm">Вы уверены?</string>
+    <string name="instance_ok">ОК</string>
+    <string name="new_instance">Новая установка</string>
+    <string name="edit_instance">Редактирование установки</string>
+    <string name="edit_open_directory">Открыть папку установки</string>
+    <string name="no_free_slots">Нет свободных слотов</string>
+    <string name="no_free_slots_description">Одновременно может быть запущено не более %d экземпляров.</string>
+    <string name="error">Ошибка</string>
+    <string name="error_name_empty">Имя не может быть пустым</string>
+    <string name="error_config_empty">Выберите конфиг</string>
+    <string name="badge_boosty">Поддержать разработчика на Boosty</string>
+    <string name="badge_telegram">Подписаться на Telegram</string>
+    <string name="badge_k3d">Чат K3D</string>
+    <string name="settings">Настройки</string>
+    <string name="camera">Камера</string>
+    <string name="enable_camera">Включить сервер камеры</string>
+    <string name="usb_list">Отобразить список USB устройств</string>
+    <string name="usb_list_title">USB устройства</string>
+    <string name="usb_list_no_devices">USB устройства не найдены</string>
+</resources>

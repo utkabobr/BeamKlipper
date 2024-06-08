@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <attr name="cardOutlineColor" format="color|reference" />
+    <attr name="startStopButtonColor_0" format="color|reference"/>
+    <attr name="startStopButtonColor_1" format="color|reference"/>
+    <attr name="startStopButtonColor_2" format="color|reference"/>
+    <attr name="startStopButtonColor_3" format="color|reference"/>
+    <attr name="startStopButtonColor_4" format="color|reference"/>
+    <attr name="startStopButtonColor_5" format="color|reference"/>
+    <attr name="startStopButtonColor_6" format="color|reference"/>
+    <attr name="startStopButtonColor_7" format="color|reference"/>
+    <attr name="startStopButtonColor_8" format="color|reference"/>
+    <attr name="startStopButtonColor_9" format="color|reference"/>
+    <attr name="startStopButtonForegroundColor" format="color|reference"/>
+    <attr name="textColorDanger" format="color|reference"/>
+    <attr name="boostyColor" format="color|reference"/>
+    <attr name="telegramColor" format="color|reference"/>
+</resources>

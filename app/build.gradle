@@ -1,0 +1,337 @@
+import org.json.JSONArray
+import org.json.JSONObject
+
+import java.nio.file.Files
+import java.nio.file.StandardCopyOption
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+
+plugins {
+    id 'com.android.application'
+    id 'com.chaquo.python'
+}
+
+android {
+    namespace 'ru.ytkab0bp.beamklipper'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "ru.ytkab0bp.beamklipper"
+        minSdk 21
+        targetSdk 34
+        versionCode 2
+        versionName "0.2_klipper-0.12.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        python {
+            version = "3.10"
+            pip {
+                options("--extra-index-url", "https://ytkab0bp.ru/beam/pypi")
+
+                install "cffi==1.15.1"
+                install "pyserial==3.4"
+                install "greenlet==3.0.1"
+                install "python-can==3.3.4"
+                install "markupsafe==2.1.5"
+                install "tornado==6.4.0"
+                install "pyserial-asyncio==0.6"
+                install "pillow==9.2.0"
+                install "streaming-form-data==1.15.0"
+                install "distro==1.9.0"
+                install "inotify-simple==1.3.5"
+                install "libnacl==2.1.0"
+                install "paho-mqtt==1.6.1"
+                install "zeroconf==0.131.0"
+                install "preprocess-cancellation==0.2.1"
+                install "jinja2==3.1.4"
+                install "dbus-next==0.2.3"
+                install "apprise==1.8.0"
+                install "ldap3==2.9.1"
+                install "python-periphery==2.4.1"
+                install "pynacl==1.5.0"
+            }
+            pyc {
+                src false
+            }
+        }
+        ndk {
+            abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86', 'x86_64'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    externalNativeBuild {
+        cmake {
+            path file('CMakeLists.txt')
+        }
+        ndkVersion "23.2.8568313"
+    }
+
+    buildFeatures {
+        aidl true
+        buildConfig true
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            outputFileName = "BeamKlipper_" + getGitCommitHash(file('.')) + ".apk"
+        }
+    }
+}
+
+dependencies {
+    implementation 'com.github.mik3y:usb-serial-for-android:3.7.2'
+    implementation 'androidx.annotation:annotation:1.8.0'
+    implementation 'androidx.core:core:1.13.1'
+    implementation 'androidx.activity:activity:1.9.0'
+    implementation 'androidx.appcompat:appcompat:1.7.0'
+    implementation "com.goterl:lazysodium-android:5.1.0@aar"
+    implementation "org.java-websocket:Java-WebSocket:1.5.6"
+    implementation 'com.google.android.material:material:1.12.0'
+    implementation project(":eventbus")
+    implementation project(":eventbus_api")
+    annotationProcessor project(":eventbus_processor")
+
+    constraints {
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.0") {
+            because("kotlin-stdlib-jdk7 is now a part of kotlin-stdlib")
+        }
+        implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.0") {
+            because("kotlin-stdlib-jdk8 is now a part of kotlin-stdlib")
+        }
+    }
+}
+
+static String getGitCommitHash(File dir) {
+    try {
+        return Runtime.getRuntime().exec("git rev-parse HEAD", null, dir).inputStream.readLines().get(0).substring(0, 10)
+    } catch (Exception e){
+        println("Unable to get git commit hash:")
+        e.printStackTrace()
+        return "non-git build"
+    }
+}
+
+static void collectFiles(File f, List<File> files) {
+    if (f.isDirectory()) {
+        f.listFiles().each {
+            collectFiles(it, files)
+        }
+    } else {
+        files.add(f)
+    }
+}
+
+tasks.register('bundleFluidd') {
+    doFirst {
+        var assets = file('src/main/assets')
+        var versionFile = new File(assets, 'fluidd_version')
+        var configVersion = project.property('beam.fluidd_version')
+
+        if (versionFile.exists() && configVersion == versionFile.text.trim()) {
+            return
+        }
+
+        var fluiddDir = new File(assets, 'fluidd')
+        var files = new ArrayList<File>()
+        collectFiles(fluiddDir, files)
+        files.each {
+            it.delete()
+        }
+
+        def con = new URL('https://github.com/fluidd-core/fluidd/releases/download/' + configVersion + '/fluidd.zip').openConnection() as HttpURLConnection
+        if (con.getResponseCode() == 200) {
+            ZipInputStream zis = new ZipInputStream(con.getInputStream())
+            ZipEntry entry
+            byte[] buf = new byte[10240]
+            int c
+
+            while (entry = zis.getNextEntry()) {
+                File f = new File(fluiddDir, entry.getName())
+                if (entry.isDirectory()) {
+                    f.mkdirs()
+                    continue
+                }
+
+                f.getParentFile().mkdirs()
+                var fos = new FileOutputStream(f)
+
+                while ((c = zis.read(buf)) != -1) {
+                    fos.write(buf, 0, c)
+                }
+                fos.close()
+            }
+            zis.close()
+
+            versionFile.text = configVersion
+        } else {
+            throw new IllegalStateException('Failed to download fluidd')
+        }
+    }
+}
+
+tasks.register('bundleMainsail') {
+    doFirst {
+        var assets = file('src/main/assets')
+        var versionFile = new File(assets, 'mainsail_version')
+        var configVersion = project.property('beam.mainsail_version')
+
+        if (versionFile.exists() && configVersion == versionFile.text.trim()) {
+            return
+        }
+
+        var mainsailDir = new File(assets, 'mainsail')
+        var files = new ArrayList<File>()
+        collectFiles(mainsailDir, files)
+        files.each {
+            it.delete()
+        }
+
+        def con = new URL('https://github.com/mainsail-crew/mainsail/releases/download/' + configVersion + '/mainsail.zip').openConnection() as HttpURLConnection
+        if (con.getResponseCode() == 200) {
+            ZipInputStream zis = new ZipInputStream(con.getInputStream())
+            ZipEntry entry
+            byte[] buf = new byte[10240]
+            int c
+
+            while (entry = zis.getNextEntry()) {
+                File f = new File(mainsailDir, entry.getName())
+                if (entry.isDirectory()) {
+                    f.mkdirs()
+                    continue
+                }
+
+                f.getParentFile().mkdirs()
+                var fos = new FileOutputStream(f)
+
+                while ((c = zis.read(buf)) != -1) {
+                    fos.write(buf, 0, c)
+                }
+                fos.close()
+            }
+            zis.close()
+
+            versionFile.text = configVersion
+        } else {
+            throw new IllegalStateException('Failed to download mainsail')
+        }
+    }
+}
+
+tasks.register('bundleKlipper') {
+    doFirst {
+        var assets = file('src/main/assets')
+        var versionFile = new File(assets, 'bundle_version')
+        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare'))
+        if (!versionFile.exists() || versionFile.text != version) {
+            var files = new ArrayList<File>()
+            collectFiles(file('src/main/assets/klipper/klippy'), files)
+            collectFiles(file('src/main/assets/moonraker/moonraker'), files)
+            files.each {
+                it.delete()
+            }
+
+            files.clear()
+
+            var klippy = file('src/main/klipper/klippy')
+            collectFiles(klippy, files)
+
+            JSONArray arr = new JSONArray()
+            files.each {
+                var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('klippy/' + sub)
+                var f = new File(assets, 'klipper/klippy/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            files.clear()
+            klippy = file('src/main/happyhare/extras')
+            collectFiles(klippy, files)
+            files.each {
+                if (it.getName() == ".pylintrc") return
+
+                var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('klippy/extras/' + sub)
+                var f = new File(assets, 'klipper/klippy/extras/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            files.clear()
+            klippy = file('src/main/klipper/config')
+            collectFiles(klippy, files)
+            files.each {
+                var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('config/' + sub)
+                var f = new File(assets, 'klipper/config/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            files.clear()
+            klippy = file('src/main/klipper/docs')
+            collectFiles(klippy, files)
+            files.each {
+                var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
+                if (sub.startsWith("_klipper3d")) {
+                    return
+                }
+                arr.put('docs/' + sub)
+                var f = new File(assets, 'klipper/docs/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            JSONObject index = new JSONObject()
+            index.put('klipper', arr)
+
+            arr = new JSONArray()
+            arr.put('bootstrap.py')
+            var moonraker = file('src/main/moonraker/moonraker')
+            files.clear()
+            collectFiles(moonraker, files)
+            files.each {
+                var sub = it.getAbsolutePath().substring(moonraker.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('moonraker/' + sub)
+                var f = new File(assets, 'moonraker/moonraker/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            moonraker = file('src/main/happyhare/components/')
+            files.clear()
+            collectFiles(moonraker, files)
+            files.each {
+                var sub = it.getAbsolutePath().substring(moonraker.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('moonraker/components/' + sub)
+                var f = new File(assets, 'moonraker/moonraker/components/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            index.put('moonraker', arr)
+
+            var indexFile = file('src/main/assets/index.json')
+            if (!indexFile.exists()) indexFile.createNewFile()
+            indexFile.text = index.toString()
+
+            if (!versionFile.exists()) versionFile.createNewFile()
+            versionFile.text = version
+        }
+    }
+}
+tasks.getByName('preBuild').dependsOn('bundleKlipper')
+tasks.getByName('preBuild').dependsOn('bundleFluidd')
+tasks.getByName('preBuild').dependsOn('bundleMainsail')

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="AppTheme" parent="@style/Theme.Material3.DayNight.NoActionBar">
+        <item name="cardOutlineColor">@color/cardOutlineColor</item>
+        <item name="android:colorAccent">#f36d15</item>
+        <item name="startStopButtonForegroundColor">#FFF</item>
+        <item name="startStopButtonColor_0">?android:colorAccent</item>
+        <item name="startStopButtonColor_1">#9b1bff</item>
+        <item name="startStopButtonColor_2">#91eae4</item>
+        <item name="startStopButtonColor_3">#7F7FD5</item>
+        <item name="startStopButtonColor_4">#dedf6c</item>
+        <item name="startStopButtonColor_5">#25c586</item>
+        <item name="startStopButtonColor_6">#ff464b</item>
+        <item name="startStopButtonColor_7">#e45e88</item>
+        <item name="startStopButtonColor_8">#aeb907</item>
+        <item name="startStopButtonColor_9">#3b76ff</item>
+        <item name="textColorDanger">#e12336</item>
+        <item name="boostyColor">#f15a2c</item>
+        <item name="telegramColor">#33bbff</item>
+    </style>
+</resources>
