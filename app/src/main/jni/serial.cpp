@@ -47,10 +47,6 @@ struct WorkerArgs {
     JNIEnv* env;
     staticVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
 
-    tcgetattr(args->slave, &args->tio);
-    args->tio.c_lflag &= ~ECHO;
-    tcsetattr(args->slave, TCSANOW, &args->tio);
-
     tcgetattr(args->master, &args->tio);
     args->tio.c_lflag &= ~ECHO;
     tcsetattr(args->master, TCSANOW, &args->tio);
