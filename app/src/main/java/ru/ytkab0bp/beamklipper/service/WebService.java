@@ -34,7 +34,7 @@ import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.R;
 
 public class WebService extends Service {
-    private final static int PORT = 8888;
+    public final static int PORT = 8888;
     private final static int ID = 300000;
 
     private final static Pattern API_PATTERN = Pattern.compile("^/(printer|api|access|machine|server)/");

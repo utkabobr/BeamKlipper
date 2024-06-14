@@ -18,6 +18,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
+import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
 import ru.ytkab0bp.beamklipper.service.BasePythonService;
 import ru.ytkab0bp.beamklipper.service.CameraService;
 import ru.ytkab0bp.beamklipper.service.WebService;
@@ -243,10 +244,12 @@ public class KlipperInstance {
         KlipperApp.EVENT_BUS.fireEvent(new InstanceStateChangedEvent(id, state));
 
         if (state == State.IDLE) {
-            slots.remove(slot);
+            slots.remove(this);
             if (webServerConnection != null) {
+                KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STOPPING));
                 KlipperApp.INSTANCE.unbindService(webServerConnection);
                 KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, WebService.class));
+                KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.IDLE));
                 webServerConnection = null;
             }
             if (cameraServerConnection != null) {
@@ -255,9 +258,12 @@ public class KlipperInstance {
                 cameraServerConnection = null;
             }
         } else if (state == State.RUNNING) {
+            KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STARTING));
             KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, WebService.class), webServerConnection = new ServiceConnection() {
                 @Override
-                public void onServiceConnected(ComponentName name, IBinder service) {}
+                public void onServiceConnected(ComponentName name, IBinder service) {
+                    KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.RUNNING));
+                }
 
                 @Override
                 public void onServiceDisconnected(ComponentName name) {}
@@ -273,6 +279,10 @@ public class KlipperInstance {
                 }, Context.BIND_AUTO_CREATE);
             }
         }
+    }
+
+    public static boolean isWebServerRunning() {
+        return webServerConnection != null;
     }
 
     public enum State {

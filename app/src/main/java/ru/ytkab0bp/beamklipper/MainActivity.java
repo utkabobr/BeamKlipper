@@ -69,7 +69,7 @@ import ru.ytkab0bp.eventbus.EventHandler;
 
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_NOTIFICATIONS = 100;
-    private final static int VIEW_TYPE_HEADER = 0, VIEW_TYPE_INSTANCE = 1, VIEW_TYPE_NEW = 2;
+    private final static int VIEW_TYPE_HEADER = 0, VIEW_TYPE_INSTANCE = 1, VIEW_TYPE_NEW = 2, VIEW_TYPE_WEB = 3;
     private final static Object NOTIFY_LIVE = new Object();
 
     private HomeView homeView;
@@ -118,6 +118,12 @@ public class MainActivity extends AppCompatActivity {
         fl.setOnApplyWindowInsetsListener((v, insets) -> {
             badgesLayout.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             preferencesView.setPadding(insets.getSystemWindowInsetLeft(), 0, insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) listCardView.getLayoutParams();
+            params.leftMargin = ViewUtils.dp(21) + insets.getSystemWindowInsetLeft();
+            params.topMargin = ViewUtils.dp(64) + insets.getSystemWindowInsetTop();
+            params.rightMargin = ViewUtils.dp(21) + insets.getSystemWindowInsetRight();
+            params.bottomMargin = ViewUtils.dp(72) + insets.getSystemWindowInsetBottom();
+            listCardView.requestLayout();
             return insets;
         });
 
@@ -180,6 +186,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        homeView.setScrollView(listView);
         listView.setAdapter(new RecyclerView.Adapter() {
             @NonNull
             @Override
@@ -198,6 +205,7 @@ public class MainActivity extends AppCompatActivity {
                         tv.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
                         v = tv;
                         break;
+                    case VIEW_TYPE_WEB:
                     case VIEW_TYPE_INSTANCE:
                         v = new KlipperInstanceView(MainActivity.this);
                         break;
@@ -243,11 +251,11 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
                 switch (getItemViewType(position)) {
-                    case VIEW_TYPE_INSTANCE:
+                    case VIEW_TYPE_INSTANCE: {
                         KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
-                        view.bind(instances.get(position - 1));
+                        view.bind(instances.get(position - 2));
                         view.setOnClickListener(v -> {
-                            KlipperInstance inst = instances.get(position - 1);
+                            KlipperInstance inst = instances.get(position - 2);
                             newOrEditTitle.setText(R.string.edit_instance);
                             editInstance = inst;
                             editOpenDirectoryRow.setVisibility(View.VISIBLE);
@@ -258,7 +266,7 @@ public class MainActivity extends AppCompatActivity {
                             newOrEditContinue.setText(R.string.instance_ok);
                         });
                         view.setOnLongClickListener(v -> {
-                            KlipperInstance inst = instances.get(position - 1);
+                            KlipperInstance inst = instances.get(position - 2);
                             new MaterialAlertDialogBuilder(MainActivity.this)
                                     .setTitle(getString(R.string.instance_delete, inst.name))
                                     .setMessage(R.string.instance_delete_confirm)
@@ -268,6 +276,12 @@ public class MainActivity extends AppCompatActivity {
                             return true;
                         });
                         break;
+                    }
+                    case VIEW_TYPE_WEB: {
+                        KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
+                        view.bindWeb();
+                        break;
+                    }
                     case VIEW_TYPE_NEW:
                         holder.itemView.setOnClickListener(v -> {
                             newOrEditTitle.setText(R.string.new_instance);
@@ -286,12 +300,12 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public int getItemViewType(int position) {
-                return position == 0 ? VIEW_TYPE_HEADER : position == getItemCount() - 1 ? VIEW_TYPE_NEW : VIEW_TYPE_INSTANCE;
+                return position == 0 ? VIEW_TYPE_HEADER : position == 1 ? VIEW_TYPE_WEB : position == getItemCount() - 1 ? VIEW_TYPE_NEW : VIEW_TYPE_INSTANCE;
             }
 
             @Override
             public int getItemCount() {
-                return instances.size() + 2;
+                return instances.size() + 3;
             }
         });
         resizeFrame.addView(listView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -448,7 +462,8 @@ public class MainActivity extends AppCompatActivity {
         listCardView.addView(resizeFrame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         homeView.addView(listCardView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER) {{
             leftMargin = rightMargin = ViewUtils.dp(21);
-            topMargin = bottomMargin = ViewUtils.dp(64);
+            topMargin = ViewUtils.dp(64);
+            bottomMargin = ViewUtils.dp(72);
         }});
         homeView.addView(preferencesView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         homeView.addView(badgesLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) {{
@@ -561,7 +576,7 @@ public class MainActivity extends AppCompatActivity {
             RefBadgeView badge = refBadges[i];
             badge.setProgress(pr);
 
-            float fX = -ViewUtils.dp(9) + badgesLayout.getWidth() - badgesLayout.getPaddingRight() - ViewUtils.dp(22 + 18) * (i + 1) - ViewUtils.dp(8) * i;
+            float fX = -ViewUtils.dp(9) + badgesLayout.getWidth() - badgesLayout.getPaddingLeft() - badgesLayout.getPaddingRight() - ViewUtils.dp(22 + 18) * (i + 1) - ViewUtils.dp(8) * i;
             float tX = 0;
 
             float fY = 0;
@@ -598,7 +613,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         if (i != -1) {
-            listView.getAdapter().notifyItemChanged(i + 1, NOTIFY_LIVE);
+            listView.getAdapter().notifyItemChanged(i + 2, NOTIFY_LIVE);
         }
     }
 
@@ -614,7 +629,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (i != -1) {
             instances.remove(i);
-            listView.getAdapter().notifyItemRemoved(i + 1);
+            listView.getAdapter().notifyItemRemoved(i + 2);
         }
     }
 

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.View;
 import android.view.ViewConfiguration;
 import android.widget.FrameLayout;
 
@@ -27,6 +28,8 @@ public class HomeView extends FrameLayout {
     private SpringAnimation animation;
     private float progress;
 
+    private View scrollView;
+
     public HomeView(@NonNull Context context) {
         super(context);
         touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
@@ -34,7 +37,9 @@ public class HomeView extends FrameLayout {
             @Override
             public boolean onScroll(@Nullable MotionEvent e1, @NonNull MotionEvent e2, float distanceX, float distanceY) {
                 if (!processingSwipe && !isTouchDisabled) {
-                    if (animation == null && Math.abs(e2.getY() - e1.getY()) >= touchSlop && Math.abs(distanceY) >= Math.abs(distanceX) * 1.5f) {
+                    if (progress == 0 && scrollView != null && scrollView.canScrollVertically(e1.getY() - e2.getY() > 0 ? 1 : -1)) {
+                        isTouchDisabled = true;
+                    } else if (animation == null && Math.abs(e2.getY() - e1.getY()) >= touchSlop && Math.abs(distanceY) >= Math.abs(distanceX) * 1.5f) {
                         startOffset = e2.getY() - e1.getY();
                         startProgress = progress;
                         processingSwipe = true;
@@ -72,6 +77,10 @@ public class HomeView extends FrameLayout {
                 return false;
             }
         });
+    }
+
+    public void setScrollView(View scrollView) {
+        this.scrollView = scrollView;
     }
 
     public void animateTo(float to) {

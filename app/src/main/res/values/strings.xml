@@ -47,4 +47,6 @@
     <string name="usb_device_naming_dev_path">By path</string>
     <string name="usb_device_naming_vid_pid">By VID/PID</string>
     <string name="autostart">Autostart</string>
+    <string name="fluidd" translatable="false">Fluidd</string>
+    <string name="ip_info" translatable="false">http://%s:%d/</string>
 </resources>

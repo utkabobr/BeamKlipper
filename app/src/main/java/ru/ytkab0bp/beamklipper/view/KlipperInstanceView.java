@@ -1,8 +1,12 @@
 package ru.ytkab0bp.beamklipper.view;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
+import android.net.Uri;
+import android.net.wifi.WifiManager;
+import android.text.format.Formatter;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.ViewGroup;
@@ -26,6 +30,8 @@ import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
 import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
+import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
+import ru.ytkab0bp.beamklipper.service.WebService;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.eventbus.EventHandler;
 
@@ -138,6 +144,29 @@ public class KlipperInstanceView extends LinearLayout {
         invalidate();
     }
 
+    public void bindWeb() {
+        this.id = null;
+        icon.setImageResource(R.drawable.ic_square_stack_up_outline_28);
+        title.setText(R.string.fluidd);
+
+        boolean visible = KlipperInstance.isWebServerRunning();
+        subtitle.setVisibility(visible ? VISIBLE : GONE);
+        subtitle.setTag(visible ? true : null);
+        if (visible) {
+            bindWebSubtitle();
+        }
+        setOnClickListener(v -> v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:" + WebService.PORT + "/"))));
+        setClickable(visible);
+
+        setColorIndex(9);
+        startStopButton.setVisibility(GONE);
+    }
+
+    private void bindWebSubtitle() {
+        WifiManager wm = (WifiManager) KlipperApp.INSTANCE.getSystemService(Context.WIFI_SERVICE);
+        subtitle.setText(KlipperApp.INSTANCE.getString(R.string.ip_info, Formatter.formatIpAddress(wm.getConnectionInfo().getIpAddress()), WebService.PORT));
+    }
+
     public void bind(KlipperInstance instance) {
         if (instance == null) return;
         this.id = instance.id;
@@ -227,6 +256,22 @@ public class KlipperInstanceView extends LinearLayout {
                 });
         titleSubtitleLayout.setTranslationY(fY);
         visibleAnimation.start();
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onWebStateChanged(WebStateChangedEvent e) {
+        if (id == null) {
+            if (e.state == KlipperInstance.State.RUNNING) {
+                bindWebSubtitle();
+            }
+
+            boolean wasVisible = subtitle.getTag() != null;
+            boolean visible = e.state == KlipperInstance.State.RUNNING;
+            if (visible != wasVisible) {
+                animateSubtitle(visible);
+                setClickable(visible);
+            }
+        }
     }
 
     @EventHandler(runOnMainThread = true)
