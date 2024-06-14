@@ -245,38 +245,47 @@ public class KlipperInstance {
 
         if (state == State.IDLE) {
             slots.remove(this);
-            if (webServerConnection != null) {
-                KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STOPPING));
-                KlipperApp.INSTANCE.unbindService(webServerConnection);
-                KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, WebService.class));
-                KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.IDLE));
-                webServerConnection = null;
-            }
-            if (cameraServerConnection != null) {
-                KlipperApp.INSTANCE.unbindService(cameraServerConnection);
-                KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, CameraService.class));
-                cameraServerConnection = null;
+            if (slots.isEmpty()) {
+                if (webServerConnection != null) {
+                    KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STOPPING));
+                    KlipperApp.INSTANCE.unbindService(webServerConnection);
+                    KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, WebService.class));
+                    KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.IDLE));
+                    webServerConnection = null;
+                }
+                if (cameraServerConnection != null) {
+                    KlipperApp.INSTANCE.unbindService(cameraServerConnection);
+                    KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, CameraService.class));
+                    cameraServerConnection = null;
+                }
             }
         } else if (state == State.RUNNING) {
-            KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STARTING));
-            KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, WebService.class), webServerConnection = new ServiceConnection() {
-                @Override
-                public void onServiceConnected(ComponentName name, IBinder service) {
-                    KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.RUNNING));
-                }
+            if (webServerConnection == null) {
+                KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.STARTING));
+                KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, WebService.class), webServerConnection = new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {
+                        KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.RUNNING));
+                    }
 
-                @Override
-                public void onServiceDisconnected(ComponentName name) {}
-            }, Context.BIND_AUTO_CREATE);
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {
+                    }
+                }, Context.BIND_AUTO_CREATE);
+            }
 
             if (Prefs.isCameraEnabled()) {
-                KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, CameraService.class), cameraServerConnection = new ServiceConnection() {
-                    @Override
-                    public void onServiceConnected(ComponentName name, IBinder service) {}
+                if (cameraServerConnection == null) {
+                    KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, CameraService.class), cameraServerConnection = new ServiceConnection() {
+                        @Override
+                        public void onServiceConnected(ComponentName name, IBinder service) {
+                        }
 
-                    @Override
-                    public void onServiceDisconnected(ComponentName name) {}
-                }, Context.BIND_AUTO_CREATE);
+                        @Override
+                        public void onServiceDisconnected(ComponentName name) {
+                        }
+                    }, Context.BIND_AUTO_CREATE);
+                }
             }
         }
     }
