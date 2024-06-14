@@ -8,17 +8,24 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.BundleInstaller;
+import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
 
 public class BaseMoonrakerService extends BasePythonService {
     private final static int BASE_ID = 200000;
+    private final static Pattern MOONRAKER_PORT_PATTERN = Pattern.compile("port: (\\d+)");
 
     private int index;
 
@@ -61,9 +68,25 @@ public class BaseMoonrakerService extends BasePythonService {
             File moonrakerCfg = new File(config, "moonraker.conf");
             if (!moonrakerCfg.exists()) {
                 moonrakerCfg.getParentFile().mkdirs();
+                int freePort = 7125;
+                for (KlipperInstance otherInst : KlipperInstance.getInstances()) {
+                    File f = new File(otherInst.getPublicDirectory(), "config/moonraker.conf");
+                    if (f.exists()) {
+                        String str = readString(f);
+                        Matcher m = MOONRAKER_PORT_PATTERN.matcher(str);
+                        if (m.find()) {
+                            int otherPort = Integer.parseInt(m.group(1));
+                            if (otherPort == freePort) {
+                                freePort++;
+                            }
+                        }
+                    }
+                }
+
                 FileOutputStream fos = new FileOutputStream(moonrakerCfg);
                 fos.write(BundleInstaller.readString(KlipperApp.INSTANCE.getAssets(), "moonraker/default.conf")
                         .replace("${KLIPPY_UDS}", socket.getAbsolutePath())
+                        .replace("${MOONRAKER_PORT}", String.valueOf(freePort))
                         .getBytes(StandardCharsets.UTF_8));
                 fos.close();
             }
@@ -71,5 +94,18 @@ public class BaseMoonrakerService extends BasePythonService {
         } catch (Exception e) {
             Log.e("moonraker_" + index, "Failed to start moonraker", e);
         }
+    }
+
+    private static String readString(File file) throws IOException {
+        InputStream in = new FileInputStream(file);
+        ByteArrayOutputStream bos = new ByteArrayOutputStream();
+        byte[] buffer = new byte[10240]; int c;
+        while ((c = in.read(buffer)) != -1) {
+            bos.write(buffer, 0, c);
+        }
+        in.close();
+        bos.close();
+
+        return bos.toString();
     }
 }

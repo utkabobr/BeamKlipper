@@ -283,14 +283,15 @@ public class SmoothItemAnimator extends SimpleItemAnimator {
         View view = holder.itemView;
         int deltaX = toX - fromX;
         int deltaY = toY - fromY;
+        float fX = view.getTranslationX(), fY = view.getTranslationY();
         SpringAnimation spring = new SpringAnimation(new FloatValueHolder(0))
                 .setMinimumVisibleChange(1 / 256f)
                 .setSpring(new SpringForce(1f)
                         .setStiffness(1000f)
                         .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
                 .addUpdateListener((animation, value, velocity) -> {
-                    view.setTranslationX(ViewUtils.lerp(fromX, toX, value));
-                    view.setTranslationY(ViewUtils.lerp(fromY, toY, value));
+                    view.setTranslationX(ViewUtils.lerp(fX, 0, value));
+                    view.setTranslationY(ViewUtils.lerp(fY, 0, value));
                 })
                 .addEndListener((animation, canceled, value, velocity) -> {
                     if (canceled) {
