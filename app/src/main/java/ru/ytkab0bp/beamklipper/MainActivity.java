@@ -242,7 +242,7 @@ public class MainActivity extends AppCompatActivity {
             public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position, @NonNull List payloads) {
                 if (payloads.contains(NOTIFY_LIVE)) {
                     KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
-                    view.bind(instances.get(position - 1));
+                    view.bind(instances.get(position - 2));
                     return;
                 }
                 super.onBindViewHolder(holder, position, payloads);
