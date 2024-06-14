@@ -25,7 +25,7 @@ public class NativeSerialPort implements SerialProxy {
         if (mFile.exists()) mFile.delete();
         pointer = SerialNative.create(mFile.getAbsolutePath(), this);
         if (pointer == 0) {
-            Log.w(TAG, "Failed to open native port at " + mFile.getAbsolutePath());
+            Log.e(TAG, "Failed to open native port at " + mFile.getAbsolutePath());
             return;
         }
         mFile.setReadable(true, false);

@@ -52,6 +52,7 @@ public class PreferencesCardView extends FrameLayout {
     private Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
     private LinearLayout header;
+    private TextView title;
     private float progress;
 
     private RecyclerView listView;
@@ -85,7 +86,7 @@ public class PreferencesCardView extends FrameLayout {
         iv.setColorFilter(ViewUtils.resolveColor(context, android.R.attr.textColorSecondary));
         header.addView(iv);
 
-        TextView title = new TextView(context);
+        title = new TextView(context);
         title.setText(R.string.settings);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         title.setTextColor(ViewUtils.resolveColor(context, android.R.attr.textColorSecondary));
@@ -222,14 +223,19 @@ public class PreferencesCardView extends FrameLayout {
         }
         canvas.save();
         canvas.clipPath(path);
+        int alpha = outlinePaint.getAlpha();
+        outlinePaint.setAlpha((int) ((1f - progress) * alpha));
         float stroke = outlinePaint.getStrokeWidth() / 2f;
         canvas.drawPaint(bgPaint);
         canvas.drawRoundRect(stroke, ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) + stroke, 0, progress), getWidth() - stroke, getHeight() + radius, radius, radius, outlinePaint);
+        outlinePaint.setAlpha(alpha);
         super.draw(canvas);
         canvas.restore();
     }
 
     private void invalidateProgress() {
+        title.setScaleX(ViewUtils.lerp(1f, 0.5f, progress));
+        title.setScaleY(ViewUtils.lerp(1f, 0.5f, progress));
         header.setAlpha(1f - progress);
         listView.setAlpha(progress);
         for (int i = 0; i < getChildCount(); i++) {

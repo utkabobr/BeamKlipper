@@ -48,8 +48,18 @@ struct WorkerArgs {
     staticVM->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6);
 
     tcgetattr(args->master, &args->tio);
-    args->tio.c_lflag &= ~ECHO;
+    args->tio.c_lflag = 0;
+    args->tio.c_cflag = 176;
+    args->tio.c_iflag = 0;
+    args->tio.c_oflag = 0;
     tcsetattr(args->master, TCSANOW, &args->tio);
+
+    tcgetattr(args->slave, &args->tio);
+    args->tio.c_lflag = 0;
+    args->tio.c_cflag = 176;
+    args->tio.c_iflag = 0;
+    args->tio.c_oflag = 0;
+    tcsetattr(args->slave, TCSANOW, &args->tio);
 
     while (true) {
         FD_ZERO(&read_fds);
@@ -132,8 +142,8 @@ extern "C" {
         SerialPort* port = (SerialPort*) (intptr_t) pointer;
         jbyte* elements = env->GetByteArrayElements(arr, JNI_FALSE);
         pthread_mutex_lock(&mutex);
+        tcflush(port->master, TCOFLUSH);
         write(port->master, elements, len);
-        fsync(port->master);
         pthread_mutex_unlock(&mutex);
         env->ReleaseByteArrayElements(arr, elements, JNI_ABORT);
     }

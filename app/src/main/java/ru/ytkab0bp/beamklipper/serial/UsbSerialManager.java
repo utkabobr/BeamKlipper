@@ -2,6 +2,7 @@ package ru.ytkab0bp.beamklipper.serial;
 
 import android.annotation.SuppressLint;
 import android.app.Application;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -107,6 +108,11 @@ public class UsbSerialManager {
     }
 
     private static void connect(UsbSerialDriver drv) {
+        if (!mUsbManager.hasPermission(drv.getDevice())) {
+            mUsbManager.requestPermission(drv.getDevice(), PendingIntent.getBroadcast(KlipperApp.INSTANCE, 0, new Intent(UsbSerialManager.ACTION_ON_DEVICE_CONNECTED).setPackage(KlipperApp.INSTANCE.getPackageName()), PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_NO_CREATE));
+            return;
+        }
+
         UsbSerialPort port = drv.getPorts().get(0);
         try {
             port.open(mUsbManager.openDevice(drv.getDevice()));
