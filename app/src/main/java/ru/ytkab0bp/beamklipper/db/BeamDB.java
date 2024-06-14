@@ -53,6 +53,7 @@ public class BeamDB extends SQLiteOpenHelper {
             inst.id = cv.getAsString(COLUMN_ID);
             inst.name = cv.getAsString(COLUMN_NAME);
             inst.icon = InstanceIcon.byKey(cv.getAsString(COLUMN_ICON));
+            inst.autostart = cv.get(COLUMN_AUTOSTART) != null ? cv.getAsBoolean(COLUMN_AUTOSTART) : false;
             instances.add(inst);
         }
         c.close();
@@ -64,6 +65,7 @@ public class BeamDB extends SQLiteOpenHelper {
         cv.put(COLUMN_ID, inst.id);
         cv.put(COLUMN_NAME, inst.name);
         cv.put(COLUMN_ICON, inst.icon.name());
+        cv.put(COLUMN_AUTOSTART, inst.autostart);
         getWritableDatabase().insert(TABLE_INSTANCES, null, cv);
         KlipperInstance.onInstancesLoadedFromDB(getInstances());
         KlipperApp.EVENT_BUS.fireEvent(new InstanceCreatedEvent(inst.id));
@@ -74,6 +76,7 @@ public class BeamDB extends SQLiteOpenHelper {
         cv.put(COLUMN_ID, inst.id);
         cv.put(COLUMN_NAME, inst.name);
         cv.put(COLUMN_ICON, inst.icon.name());
+        cv.put(COLUMN_AUTOSTART, inst.autostart);
         getWritableDatabase().update(TABLE_INSTANCES, cv, "id = ?", new String[]{inst.id});
         KlipperInstance.onInstancesLoadedFromDB(getInstances());
         KlipperApp.EVENT_BUS.fireEvent(new InstanceUpdatedEvent(inst.id));

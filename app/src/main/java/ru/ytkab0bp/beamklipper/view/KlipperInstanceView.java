@@ -178,6 +178,11 @@ public class KlipperInstanceView extends LinearLayout {
                 inst.start();
             } else {
                 inst.stop();
+
+                if (inst.autostart) {
+                    inst.autostart = false;
+                    KlipperApp.DATABASE.update(inst);
+                }
             }
         });
         invalidate();

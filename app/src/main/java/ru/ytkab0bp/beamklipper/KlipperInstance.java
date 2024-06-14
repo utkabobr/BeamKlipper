@@ -30,6 +30,7 @@ public class KlipperInstance {
     public String name;
     public String id;
     public InstanceIcon icon = InstanceIcon.PRINTER;
+    public boolean autostart;
     private State state = State.IDLE;
 
     private static Map<KlipperInstance, Integer> slots = new HashMap<>();
@@ -66,10 +67,25 @@ public class KlipperInstance {
             KlipperInstance was = getInstance(inst.id);
             if (was != null) {
                 inst.state = was.state;
+                inst.klippyConnection = was.klippyConnection;
+                inst.klippyConnected = was.klippyConnected;
+                inst.klippyIntent = was.klippyIntent;
+                inst.moonrakerConnection = was.moonrakerConnection;
+                inst.moonrakerConnected = was.moonrakerConnected;
+                inst.moonrakerIntent = was.moonrakerIntent;
+                inst.slot = was.slot;
+                slots.remove(was);
+                slots.put(inst, inst.slot);
             }
         }
         KlipperInstance.instances = instances;
         instanceMap.clear();
+
+        for (KlipperInstance inst : instances) {
+            if (inst.autostart && inst.getState() == State.IDLE) {
+                inst.start();
+            }
+        }
     }
 
     public static KlipperInstance getInstance(String id) {

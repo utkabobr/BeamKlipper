@@ -43,4 +43,8 @@
     <string name="usb_list">List USB devices</string>
     <string name="usb_list_title">USB devices</string>
     <string name="usb_list_no_devices">USB devices not found</string>
+    <string name="usb_device_naming">Device naming</string>
+    <string name="usb_device_naming_dev_path">By path</string>
+    <string name="usb_device_naming_vid_pid">By VID/PID</string>
+    <string name="autostart">Autostart</string>
 </resources>

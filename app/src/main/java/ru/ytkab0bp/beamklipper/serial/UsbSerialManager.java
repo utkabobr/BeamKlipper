@@ -25,6 +25,7 @@ import java.util.Objects;
 
 import ru.ytkab0bp.beamklipper.BuildConfig;
 import ru.ytkab0bp.beamklipper.KlipperApp;
+import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 
 public class UsbSerialManager {
@@ -94,8 +95,12 @@ public class UsbSerialManager {
             ctx.registerReceiver(receiver, filter);
         }
 
+        connectAll();
+    }
+
+    public static void connectAll() {
         UsbSerialProber prober = new UsbSerialProber(KlipperProbeTable.getInstance());
-        UsbManager manager = (UsbManager) ctx.getSystemService(Context.USB_SERVICE);
+        UsbManager manager = (UsbManager) KlipperApp.INSTANCE.getSystemService(Context.USB_SERVICE);
         for (UsbSerialDriver drv : prober.findAllDrivers(manager)) {
             if (!drv.getPorts().isEmpty()) {
                 connect(drv);
@@ -103,8 +108,20 @@ public class UsbSerialManager {
         }
     }
 
-    private static String getUID(UsbDevice device) {
-        return device.getDeviceName().replace("/", "_");
+    public static void disconnectAll() {
+        for (String uid : portMap.keySet()) {
+            close(uid);
+        }
+    }
+
+    public static String getUID(UsbDevice device) {
+        switch (Prefs.getUsbDeviceNaming()) {
+            default:
+            case Prefs.USB_DEVICE_NAMING_BY_PATH:
+                return device.getDeviceName().replace("/", "_");
+            case Prefs.USB_DEVICE_NAMING_BY_VID_PID:
+                return Integer.toHexString(device.getVendorId()) + "_" + Integer.toHexString(device.getProductId());
+        }
     }
 
     private static void connect(UsbSerialDriver drv) {

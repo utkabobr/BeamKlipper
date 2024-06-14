@@ -62,7 +62,9 @@ import ru.ytkab0bp.beamklipper.view.KlipperInstanceView;
 import ru.ytkab0bp.beamklipper.view.PermissionRowView;
 import ru.ytkab0bp.beamklipper.view.PreferencesCardView;
 import ru.ytkab0bp.beamklipper.view.RefBadgeView;
+import ru.ytkab0bp.beamklipper.view.SmoothItemAnimator;
 import ru.ytkab0bp.beamklipper.view.SmoothResizeFrameLayout;
+import ru.ytkab0bp.beamklipper.view.preferences.PreferenceSwitchView;
 import ru.ytkab0bp.eventbus.EventHandler;
 
 public class MainActivity extends AppCompatActivity {
@@ -83,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
     private EditTextRowView nameRow;
     private EditTextRowView configRow;
     private TextView editOpenDirectoryRow;
+    private PreferenceSwitchView autostartRow;
     private TextView newOrEditContinue;
 
     private PreferencesCardView preferencesView;
@@ -165,6 +168,7 @@ public class MainActivity extends AppCompatActivity {
         listView = new RecyclerView(this);
         listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
         listView.setLayoutManager(new LinearLayoutManager(this));
+        listView.setItemAnimator(new SmoothItemAnimator());
         listView.addItemDecoration(new RecyclerView.ItemDecoration() {
             @Override
             public void onDraw(@NonNull Canvas c, @NonNull RecyclerView parent, @NonNull RecyclerView.State state) {
@@ -241,18 +245,20 @@ public class MainActivity extends AppCompatActivity {
                 switch (getItemViewType(position)) {
                     case VIEW_TYPE_INSTANCE:
                         KlipperInstanceView view = (KlipperInstanceView) holder.itemView;
-                        KlipperInstance inst = instances.get(position - 1);
-                        view.bind(inst);
+                        view.bind(instances.get(position - 1));
                         view.setOnClickListener(v -> {
+                            KlipperInstance inst = instances.get(position - 1);
                             newOrEditTitle.setText(R.string.edit_instance);
                             editInstance = inst;
                             editOpenDirectoryRow.setVisibility(View.VISIBLE);
+                            autostartRow.bind(getString(R.string.autostart), null, inst.autostart);
                             nameRow.bind(R.string.instance_name, inst.name);
                             configRow.setVisibility(View.GONE);
                             animateNewOrEditLayout(true);
                             newOrEditContinue.setText(R.string.instance_ok);
                         });
                         view.setOnLongClickListener(v -> {
+                            KlipperInstance inst = instances.get(position - 1);
                             new MaterialAlertDialogBuilder(MainActivity.this)
                                     .setTitle(getString(R.string.instance_delete, inst.name))
                                     .setMessage(R.string.instance_delete_confirm)
@@ -267,6 +273,7 @@ public class MainActivity extends AppCompatActivity {
                             newOrEditTitle.setText(R.string.new_instance);
                             editInstance = null;
                             editOpenDirectoryRow.setVisibility(View.GONE);
+                            autostartRow.bind(getString(R.string.autostart), null, false);
                             nameRow.bind(R.string.instance_name, null);
                             configRow.bind(R.string.instance_config, null);
                             configRow.setVisibility(View.VISIBLE);
@@ -373,6 +380,11 @@ public class MainActivity extends AppCompatActivity {
         });
         newOrEditLayout.addView(editOpenDirectoryRow);
 
+        autostartRow = new PreferenceSwitchView(this);
+        autostartRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        autostartRow.setOnClickListener(v -> autostartRow.setChecked(!autostartRow.isChecked()));
+        newOrEditLayout.addView(autostartRow);
+
         newOrEditContinue = new TextView(this);
         newOrEditContinue.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
         newOrEditContinue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
@@ -393,6 +405,7 @@ public class MainActivity extends AppCompatActivity {
 
             if (editInstance != null) {
                 editInstance.name = nameRow.getText().toString().trim();
+                editInstance.autostart = autostartRow.isChecked();
                 KlipperApp.DATABASE.update(editInstance);
                 editInstance = null;
                 animateNewOrEditLayout(false);
@@ -411,6 +424,7 @@ public class MainActivity extends AppCompatActivity {
             KlipperInstance inst = new KlipperInstance();
             inst.id = UUID.randomUUID().toString();
             inst.name = nameRow.getText().toString().trim();
+            inst.autostart = autostartRow.isChecked();
             File cfg = new File(inst.getPublicDirectory(), "config/printer.cfg");
             cfg.getParentFile().mkdirs();
             try {
@@ -434,8 +448,7 @@ public class MainActivity extends AppCompatActivity {
         listCardView.addView(resizeFrame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         homeView.addView(listCardView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER) {{
             leftMargin = rightMargin = ViewUtils.dp(21);
-            topMargin = ViewUtils.dp(64);
-            bottomMargin = ViewUtils.dp(72);
+            topMargin = bottomMargin = ViewUtils.dp(64);
         }});
         homeView.addView(preferencesView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         homeView.addView(badgesLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) {{

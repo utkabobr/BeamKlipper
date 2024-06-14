@@ -8,8 +8,11 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 
 import ru.ytkab0bp.beamklipper.KlipperApp;
+import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 
 public class Prefs {
+    public final static int USB_DEVICE_NAMING_BY_PATH = 0, USB_DEVICE_NAMING_BY_VID_PID = 1;
+
     private static SharedPreferences mPrefs;
 
     public static void init(Context ctx) {
@@ -35,5 +38,15 @@ public class Prefs {
 
     public static void setCameraEnabled(boolean en) {
         mPrefs.edit().putBoolean("camera_enabled", en).apply();
+    }
+
+    public static int getUsbDeviceNaming() {
+        return mPrefs.getInt("usb_device_naming", USB_DEVICE_NAMING_BY_PATH);
+    }
+
+    public static void setUsbDeviceNaming(int naming) {
+        UsbSerialManager.disconnectAll();
+        mPrefs.edit().putInt("usb_device_naming", naming).apply();
+        UsbSerialManager.connectAll();
     }
 }

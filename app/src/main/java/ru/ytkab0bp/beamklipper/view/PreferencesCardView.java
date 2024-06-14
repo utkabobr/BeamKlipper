@@ -31,6 +31,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.hoho.android.usbserial.driver.UsbSerialDriver;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,15 +39,17 @@ import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
 import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
+import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.beamklipper.view.preferences.PreferenceHeaderView;
 import ru.ytkab0bp.beamklipper.view.preferences.PreferenceSwitchView;
+import ru.ytkab0bp.beamklipper.view.preferences.PreferenceValueView;
 import ru.ytkab0bp.beamklipper.view.preferences.PreferenceView;
 
 public class PreferencesCardView extends FrameLayout {
-    private final static int MIN_HEIGHT_DP = 72;
-    private final static int VIEW_TYPE_HEADER = 0, VIEW_TYPE_SWITCH = 1, VIEW_TYPE_PREFERENCE = 2;
+    private final static int MIN_HEIGHT_DP = 64;
+    private final static int VIEW_TYPE_HEADER = 0, VIEW_TYPE_SWITCH = 1, VIEW_TYPE_PREFERENCE = 2, VIEW_TYPE_PREF_VALUE = 3;
     private Paint outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint dimmPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -61,6 +64,7 @@ public class PreferencesCardView extends FrameLayout {
     private int cameraHeaderRow;
     private int cameraEnabledRow;
     private int usbHeaderRow;
+    private int usbNamingRow;
     private int listUsbRow;
 
     public PreferencesCardView(@NonNull Context context) {
@@ -122,6 +126,9 @@ public class PreferencesCardView extends FrameLayout {
                     case VIEW_TYPE_PREFERENCE:
                         v = new PreferenceView(context);
                         break;
+                    case VIEW_TYPE_PREF_VALUE:
+                        v = new PreferenceValueView(context);
+                        break;
                 }
                 return new RecyclerView.ViewHolder(v) {};
             }
@@ -161,7 +168,7 @@ public class PreferencesCardView extends FrameLayout {
                                 List<String> list = new ArrayList<>();
                                 for (UsbDevice dev : manager.getDeviceList().values()) {
                                     Class<? extends UsbSerialDriver> drv = KlipperProbeTable.getInstance().findDriver(dev);
-                                    list.add(Integer.toHexString(dev.getVendorId()) + "/" + Integer.toHexString(dev.getProductId()) + " - " + dev.getDeviceName() + (drv != null ? " - " + drv.getName() : ""));
+                                    list.add(Integer.toHexString(dev.getVendorId()) + "/" + Integer.toHexString(dev.getProductId()) + " - " + dev.getDeviceName() + (drv != null ? " - " + drv.getName() + "\n" + new File(KlipperApp.INSTANCE.getFilesDir(), "serial/" + UsbSerialManager.getUID(dev)).getAbsolutePath() : ""));
                                 }
                                 AlertDialog.Builder b = new MaterialAlertDialogBuilder(context).setTitle(R.string.usb_list_title);
                                 if (list.isEmpty()) {
@@ -171,6 +178,21 @@ public class PreferencesCardView extends FrameLayout {
                                 }
                                 b.setPositiveButton(android.R.string.ok, null).show();
                             });
+                        }
+                        break;
+                    case VIEW_TYPE_PREF_VALUE:
+                        PreferenceValueView val = (PreferenceValueView) holder.itemView;
+                        if (position == usbNamingRow) {
+                            val.bind(KlipperApp.INSTANCE.getString(R.string.usb_device_naming), KlipperApp.INSTANCE.getString(Prefs.getUsbDeviceNaming() == Prefs.USB_DEVICE_NAMING_BY_PATH ? R.string.usb_device_naming_dev_path : R.string.usb_device_naming_vid_pid));
+                            val.setOnClickListener(v -> new MaterialAlertDialogBuilder(v.getContext())
+                                    .setTitle(R.string.usb_device_naming)
+                                    .setItems(new CharSequence[] {
+                                            KlipperApp.INSTANCE.getString(R.string.usb_device_naming_dev_path),
+                                            KlipperApp.INSTANCE.getString(R.string.usb_device_naming_vid_pid)
+                                    }, (dialog, which) -> {
+                                        Prefs.setUsbDeviceNaming(which);
+                                        notifyItemChanged(holder.getAdapterPosition());
+                                    }).show());
                         }
                         break;
                 }
@@ -189,6 +211,8 @@ public class PreferencesCardView extends FrameLayout {
                     return VIEW_TYPE_HEADER;
                 } else if (position == listUsbRow) {
                     return VIEW_TYPE_PREFERENCE;
+                } else if (position == usbNamingRow) {
+                    return VIEW_TYPE_PREF_VALUE;
                 }
                 return 0;
             }
@@ -205,6 +229,7 @@ public class PreferencesCardView extends FrameLayout {
         cameraHeaderRow = itemsCount++;
         cameraEnabledRow = itemsCount++;
         usbHeaderRow = itemsCount++;
+        usbNamingRow = itemsCount++;
         listUsbRow = itemsCount++;
     }
 

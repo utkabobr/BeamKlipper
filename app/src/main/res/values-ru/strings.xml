@@ -41,4 +41,8 @@
     <string name="usb_list">Отобразить список USB устройств</string>
     <string name="usb_list_title">USB устройства</string>
     <string name="usb_list_no_devices">USB устройства не найдены</string>
+    <string name="usb_device_naming">Наименование устройств</string>
+    <string name="usb_device_naming_dev_path">По пути</string>
+    <string name="usb_device_naming_vid_pid">По VID/PID</string>
+    <string name="autostart">Автозапуск</string>
 </resources>

@@ -36,5 +36,5 @@
     <usb-device vendor-id="11914" product-id="10"  /> <!-- 0x2E8A / 0x000A: Raspberry Pi Pico SDK -->
     <usb-device vendor-id="6790" product-id="21972" /><!-- 0x1A86 / 0x55D4: Qinheng CH9102F -->
 
-    <usb-device vendor-id="7504" product-id="24910"/> <!-- 0x1D50 / 0x614E: Default klipper vid/pid -->
+    <usb-device vendor-id="7504"/>                    <!-- 0x1D50 / ......: Default klipper is 0x614E, but we support all to ensure that user can compile different pid's -->
 </resources>
