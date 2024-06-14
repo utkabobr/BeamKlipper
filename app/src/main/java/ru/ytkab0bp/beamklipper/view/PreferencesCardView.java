@@ -213,7 +213,7 @@ public class PreferencesCardView extends FrameLayout {
     public void draw(@NonNull Canvas canvas) {
         float radius = (1f - progress) * ViewUtils.dp(32);
         path.rewind();
-        path.addRoundRect(0, ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP), 0, progress), getWidth(), getHeight() + radius, radius, radius, Path.Direction.CW);
+        path.addRoundRect(0, ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) - getPaddingBottom(), 0, progress), getWidth(), getHeight() + radius, radius, radius, Path.Direction.CW);
         if (progress > 0) {
             canvas.save();
             canvas.clipPath(path, Region.Op.DIFFERENCE);
@@ -227,7 +227,7 @@ public class PreferencesCardView extends FrameLayout {
         outlinePaint.setAlpha((int) ((1f - progress) * alpha));
         float stroke = outlinePaint.getStrokeWidth() / 2f;
         canvas.drawPaint(bgPaint);
-        canvas.drawRoundRect(stroke, ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) + stroke, 0, progress), getWidth() - stroke, getHeight() + radius, radius, radius, outlinePaint);
+        canvas.drawRoundRect(stroke, ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) - getPaddingBottom() + stroke, 0, progress), getWidth() - stroke, getHeight() + radius, radius, radius, outlinePaint);
         outlinePaint.setAlpha(alpha);
         super.draw(canvas);
         canvas.restore();
@@ -239,7 +239,7 @@ public class PreferencesCardView extends FrameLayout {
         header.setAlpha(1f - progress);
         listView.setAlpha(progress);
         for (int i = 0; i < getChildCount(); i++) {
-            getChildAt(i).setTranslationY(ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) - getPaddingTop(), 0, progress));
+            getChildAt(i).setTranslationY(ViewUtils.lerp(getHeight() - ViewUtils.dp(MIN_HEIGHT_DP) - getPaddingTop() - getPaddingBottom(), 0, progress));
         }
     }
 

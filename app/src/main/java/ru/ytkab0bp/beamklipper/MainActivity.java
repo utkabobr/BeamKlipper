@@ -112,7 +112,11 @@ public class MainActivity extends AppCompatActivity {
                 invalidateHomeProgress(homeView.getProgress());
             }
         };
-        badgesLayout.setFitsSystemWindows(true);
+        fl.setOnApplyWindowInsetsListener((v, insets) -> {
+            badgesLayout.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            preferencesView.setPadding(insets.getSystemWindowInsetLeft(), 0, insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
+            return insets;
+        });
 
         titleView = new TextView(this);
         titleView.setText(R.string.app_name);
@@ -429,7 +433,9 @@ public class MainActivity extends AppCompatActivity {
 
         listCardView.addView(resizeFrame, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         homeView.addView(listCardView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.CENTER) {{
-            leftMargin = topMargin = rightMargin = bottomMargin = ViewUtils.dp(21);
+            leftMargin = rightMargin = ViewUtils.dp(21);
+            topMargin = ViewUtils.dp(64);
+            bottomMargin = ViewUtils.dp(72);
         }});
         homeView.addView(preferencesView, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         homeView.addView(badgesLayout, new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT) {{
@@ -542,7 +548,7 @@ public class MainActivity extends AppCompatActivity {
             RefBadgeView badge = refBadges[i];
             badge.setProgress(pr);
 
-            float fX = -ViewUtils.dp(9) + badgesLayout.getWidth() - ViewUtils.dp(22 + 18) * (i + 1) - ViewUtils.dp(8) * i;
+            float fX = -ViewUtils.dp(9) + badgesLayout.getWidth() - badgesLayout.getPaddingRight() - ViewUtils.dp(22 + 18) * (i + 1) - ViewUtils.dp(8) * i;
             float tX = 0;
 
             float fY = 0;
@@ -674,7 +680,9 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
 
         batteryRow.setChecked(PermissionsChecker.hasBatteryPerm());
-        hideServicesChannelRow.setChecked(PermissionsChecker.isNotificationsChannelHidden());
+        if (hideServicesChannelRow != null) {
+            hideServicesChannelRow.setChecked(PermissionsChecker.isNotificationsChannelHidden());
+        }
     }
 
     @Override

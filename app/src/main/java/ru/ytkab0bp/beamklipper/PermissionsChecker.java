@@ -10,7 +10,7 @@ import androidx.core.content.ContextCompat;
 
 public class PermissionsChecker {
     public static boolean hasNotificationPerm() {
-        return ContextCompat.checkSelfPermission(KlipperApp.INSTANCE, "android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED;
+        return Build.VERSION.SDK_INT < Build.VERSION_CODES.O || ContextCompat.checkSelfPermission(KlipperApp.INSTANCE, "android.permission.POST_NOTIFICATIONS") == PackageManager.PERMISSION_GRANTED;
     }
 
     public static boolean isNotificationsChannelHidden() {
