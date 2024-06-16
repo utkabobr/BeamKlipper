@@ -25,3 +25,6 @@ local.properties
 /app/src/main/assets/fluidd/
 /app/src/main/assets/moonraker/moonraker/
 app/release/
+
+/app/src/main/jni/host_mcu/board/
+/app/src/main/jni/host_mcu/klipper_src/

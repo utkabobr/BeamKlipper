@@ -4,6 +4,8 @@
 #include <unistd.h>
 #include <malloc.h>
 #include <asm-generic/fcntl.h>
+#include <asm-generic/mman.h>
+#include <sys/mman.h>
 #include "pty/pty.h"
 
 #define BUFFER_SIZE 4096
@@ -30,6 +32,7 @@ struct WorkerArgs {
 };
 
 [[noreturn]] static void* worker(void* arguments) {
+    mlockall(MCL_CURRENT | MCL_FUTURE);
     WorkerArgs* args = (WorkerArgs*) arguments;
 
     fd_set read_fds, exception_fds;

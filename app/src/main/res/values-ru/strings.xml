@@ -10,6 +10,8 @@
     <string name="web_description">Веб сервер работает в фоне…</string>
     <string name="camera_title">Сервер камеры</string>
     <string name="camera_description">Сервер камеры работает в фоне…</string>
+    <string name="host_mcu_title">Сервис хоста микроконтроллера</string>
+    <string name="host_mcu_description">Сервис хоста микроконтроллера работает в фоне…</string>
     <string name="battery_optimization_exclusion">Исключение оптимизации батареи</string>
     <string name="notifications">Уведомления</string>
     <string name="notifications_hide_channel">Скрытие канала уведомлений</string>

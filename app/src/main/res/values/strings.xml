@@ -11,6 +11,8 @@
     <string name="web_description">Web server is running in background…</string>
     <string name="camera_title">Camera server</string>
     <string name="camera_description">Camera server is running in background…</string>
+    <string name="host_mcu_title">Host MCU service</string>
+    <string name="host_mcu_description">Host MCU service is running in background…</string>
     <string name="battery_optimization_exclusion">Battery optimization exclusion</string>
     <string name="notifications">Notifications</string>
     <string name="notifications_hide_channel">Hide notifications channel</string>

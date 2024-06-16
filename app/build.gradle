@@ -229,6 +229,42 @@ tasks.register('bundleMainsail') {
     }
 }
 
+tasks.register('createHostMCUSymlinks') {
+    var boardFile = file('src/main/jni/host_mcu/board')
+    if (!boardFile.exists()) {
+        boardFile.mkdir()
+        var files = new ArrayList<File>()
+        var base = file('src/main/klipper/src/generic')
+        collectFiles(base, files)
+        for (File f : files) {
+            var nf = new File(boardFile, f.getAbsolutePath().substring(base.getAbsolutePath().length() + 1))
+            Files.createSymbolicLink(nf.toPath(), f.toPath())
+        }
+
+        files.clear()
+        base = file('src/main/klipper/src/linux')
+        collectFiles(base, files)
+        for (File f : files) {
+            var nf = new File(boardFile, f.getAbsolutePath().substring(base.getAbsolutePath().length() + 1))
+            if (nf.exists()) nf.delete()
+            Files.createSymbolicLink(nf.toPath(), f.toPath())
+        }
+    }
+
+    var klipperSrc = file('src/main/jni/host_mcu/klipper_src')
+    if (!klipperSrc.exists()) {
+        klipperSrc.mkdir()
+        var files = new ArrayList<File>()
+        var base = file('src/main/klipper/src')
+        collectFiles(base, files)
+        for (File f : files) {
+            if (!f.getName().endsWith(".c") && !f.getName().endsWith(".h")) continue
+            var nf = new File(klipperSrc, f.getAbsolutePath().substring(base.getAbsolutePath().length() + 1))
+            if (!nf.getParentFile().exists()) continue
+            Files.createSymbolicLink(nf.toPath(), f.toPath())
+        }
+    }
+}
 tasks.register('bundleKlipper') {
     doFirst {
         var assets = file('src/main/assets')
@@ -335,3 +371,4 @@ tasks.register('bundleKlipper') {
 tasks.getByName('preBuild').dependsOn('bundleKlipper')
 tasks.getByName('preBuild').dependsOn('bundleFluidd')
 tasks.getByName('preBuild').dependsOn('bundleMainsail')
+tasks.getByName('preBuild').dependsOn('createHostMCUSymlinks')

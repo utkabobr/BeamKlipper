@@ -21,8 +21,10 @@ import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
 import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
 import ru.ytkab0bp.beamklipper.service.BasePythonService;
 import ru.ytkab0bp.beamklipper.service.CameraService;
+import ru.ytkab0bp.beamklipper.service.HostSerialService;
 import ru.ytkab0bp.beamklipper.service.WebService;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
+import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 
 public class KlipperInstance {
     public final static int SLOTS_COUNT = 4;
@@ -37,6 +39,7 @@ public class KlipperInstance {
     private static Map<KlipperInstance, Integer> slots = new HashMap<>();
     private static ServiceConnection webServerConnection;
     private static ServiceConnection cameraServerConnection;
+    private static ServiceConnection hostMcuConnection;
     private Intent klippyIntent;
     private ServiceConnection klippyConnection;
     private boolean klippyConnected;
@@ -258,6 +261,11 @@ public class KlipperInstance {
                     KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, CameraService.class));
                     cameraServerConnection = null;
                 }
+                if (hostMcuConnection != null) {
+                    KlipperApp.INSTANCE.unbindService(hostMcuConnection);
+                    KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, HostSerialService.class));
+                    hostMcuConnection = null;
+                }
             }
         } else if (state == State.RUNNING) {
             if (webServerConnection == null) {
@@ -267,6 +275,16 @@ public class KlipperInstance {
                     public void onServiceConnected(ComponentName name, IBinder service) {
                         KlipperApp.EVENT_BUS.fireEvent(new WebStateChangedEvent(State.RUNNING));
                     }
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {
+                    }
+                }, Context.BIND_AUTO_CREATE);
+            }
+            if (hostMcuConnection == null) {
+                KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, HostSerialService.class), hostMcuConnection = new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {}
 
                     @Override
                     public void onServiceDisconnected(ComponentName name) {
@@ -288,6 +306,23 @@ public class KlipperInstance {
                 }
             }
         }
+    }
+
+    public static void restartHostMcu() {
+        KlipperApp.INSTANCE.unbindService(hostMcuConnection);
+        KlipperApp.INSTANCE.stopService(new Intent(KlipperApp.INSTANCE, HostSerialService.class));
+        hostMcuConnection = null;
+
+        ViewUtils.postOnMainThread(() -> {
+            KlipperApp.INSTANCE.bindService(new Intent(KlipperApp.INSTANCE, HostSerialService.class), hostMcuConnection = new ServiceConnection() {
+                @Override
+                public void onServiceConnected(ComponentName name, IBinder service) {}
+
+                @Override
+                public void onServiceDisconnected(ComponentName name) {
+                }
+            }, Context.BIND_AUTO_CREATE);
+        }, 300);
     }
 
     public static boolean isWebServerRunning() {
