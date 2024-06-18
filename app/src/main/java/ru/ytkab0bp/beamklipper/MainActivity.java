@@ -53,6 +53,7 @@ import java.util.UUID;
 import ru.ytkab0bp.beamklipper.events.InstanceCreatedEvent;
 import ru.ytkab0bp.beamklipper.events.InstanceDestroyedEvent;
 import ru.ytkab0bp.beamklipper.events.InstanceUpdatedEvent;
+import ru.ytkab0bp.beamklipper.events.WebFrontendChangedEvent;
 import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
@@ -593,6 +594,11 @@ public class MainActivity extends AppCompatActivity {
         listCardView.setAlpha(1f + negProgress);
 
         preferencesView.setProgress(-negProgress);
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onFrontendChanged(WebFrontendChangedEvent e) {
+        listView.getAdapter().notifyItemChanged(1);
     }
 
     @EventHandler(runOnMainThread = true)

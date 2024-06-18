@@ -32,6 +32,7 @@ import ru.ytkab0bp.beamklipper.R;
 import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
 import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
 import ru.ytkab0bp.beamklipper.service.WebService;
+import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.eventbus.EventHandler;
 
@@ -146,8 +147,15 @@ public class KlipperInstanceView extends LinearLayout {
 
     public void bindWeb() {
         this.id = null;
-        icon.setImageResource(R.drawable.ic_square_stack_up_outline_28);
-        title.setText(R.string.fluidd);
+        if (Prefs.isMainsailEnabled()) {
+            icon.setImageResource(R.drawable.ic_sailing_24);
+            title.setText(R.string.mainsail);
+            setColorIndex(6);
+        } else {
+            icon.setImageResource(R.drawable.ic_square_stack_up_outline_28);
+            title.setText(R.string.fluidd);
+            setColorIndex(9);
+        }
 
         boolean visible = KlipperInstance.isWebServerRunning();
         subtitle.setVisibility(visible ? VISIBLE : GONE);
@@ -158,7 +166,6 @@ public class KlipperInstanceView extends LinearLayout {
         setOnClickListener(v -> v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:" + WebService.PORT + "/"))));
         setClickable(visible);
 
-        setColorIndex(9);
         startStopButton.setVisibility(GONE);
     }
 

@@ -61,6 +61,8 @@ public class PreferencesCardView extends FrameLayout {
     private RecyclerView listView;
 
     private int itemsCount = 0;
+    private int generalHeaderRow;
+    private int frontendRow;
     private int cameraHeaderRow;
     private int cameraEnabledRow;
     private int usbHeaderRow;
@@ -142,6 +144,8 @@ public class PreferencesCardView extends FrameLayout {
                             header.setText(R.string.camera);
                         } else if (position == usbHeaderRow) {
                             header.setText(R.string.usb);
+                        } else if (position == generalHeaderRow) {
+                            header.setText(R.string.general);
                         }
                         break;
                     case VIEW_TYPE_SWITCH:
@@ -193,6 +197,17 @@ public class PreferencesCardView extends FrameLayout {
                                         Prefs.setUsbDeviceNaming(which);
                                         notifyItemChanged(holder.getAdapterPosition());
                                     }).show());
+                        } else if (position == frontendRow) {
+                            val.bind(KlipperApp.INSTANCE.getString(R.string.web_frontend), KlipperApp.INSTANCE.getString(Prefs.isMainsailEnabled() ? R.string.mainsail : R.string.fluidd));
+                            val.setOnClickListener(v -> new MaterialAlertDialogBuilder(v.getContext())
+                                    .setTitle(R.string.web_frontend)
+                                    .setItems(new CharSequence[] {
+                                            KlipperApp.INSTANCE.getString(R.string.fluidd),
+                                            KlipperApp.INSTANCE.getString(R.string.mainsail)
+                                    }, (dialog, which) -> {
+                                        Prefs.setMainsailEnabled(which == 1);
+                                        notifyItemChanged(holder.getAdapterPosition());
+                                    }).show());
                         }
                         break;
                 }
@@ -207,11 +222,11 @@ public class PreferencesCardView extends FrameLayout {
             public int getItemViewType(int position) {
                 if (position == cameraEnabledRow) {
                     return VIEW_TYPE_SWITCH;
-                } else if (position == cameraHeaderRow || position == usbHeaderRow) {
+                } else if (position == cameraHeaderRow || position == usbHeaderRow || position == generalHeaderRow) {
                     return VIEW_TYPE_HEADER;
                 } else if (position == listUsbRow) {
                     return VIEW_TYPE_PREFERENCE;
-                } else if (position == usbNamingRow) {
+                } else if (position == usbNamingRow || position == frontendRow) {
                     return VIEW_TYPE_PREF_VALUE;
                 }
                 return 0;
@@ -226,6 +241,8 @@ public class PreferencesCardView extends FrameLayout {
 
     private void updateRows() {
         itemsCount = 0;
+        generalHeaderRow = itemsCount++;
+        frontendRow = itemsCount++;
         cameraHeaderRow = itemsCount++;
         cameraEnabledRow = itemsCount++;
         usbHeaderRow = itemsCount++;

@@ -43,9 +43,7 @@ Beam Klipper bundles:
 - [Moonraker](https://github.com/Arksine/moonraker)
 - [Fluidd](https://github.com/fluidd-core/fluidd)
 - [Happy Hare](https://github.com/moggieuk/Happy-Hare)
-- [Mainsail*](https://github.com/mainsail-crew/mainsail)
-
-\* \- Mainsail is in WIP, not available for now
+- [Mainsail](https://github.com/mainsail-crew/mainsail)
 
 # Autostart
 

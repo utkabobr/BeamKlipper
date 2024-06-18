@@ -8,6 +8,7 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 
 import ru.ytkab0bp.beamklipper.KlipperApp;
+import ru.ytkab0bp.beamklipper.events.WebFrontendChangedEvent;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 
 public class Prefs {
@@ -17,6 +18,15 @@ public class Prefs {
 
     public static void init(Context ctx) {
         mPrefs = PreferenceManager.getDefaultSharedPreferences(ctx);
+    }
+
+    public static void setMainsailEnabled(boolean val) {
+        mPrefs.edit().putBoolean("mainsail", val).apply();
+        KlipperApp.EVENT_BUS.fireEvent(new WebFrontendChangedEvent());
+    }
+
+    public static boolean isMainsailEnabled() {
+        return mPrefs.getBoolean("mainsail", false);
     }
 
     public static int getCameraWidth() {

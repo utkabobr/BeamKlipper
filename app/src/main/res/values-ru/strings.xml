@@ -45,4 +45,6 @@
     <string name="usb_device_naming_dev_path">По пути</string>
     <string name="usb_device_naming_vid_pid">По VID/PID</string>
     <string name="autostart">Автозапуск</string>
+    <string name="general">Основное</string>
+    <string name="web_frontend">Веб-интерфейс</string>
 </resources>
