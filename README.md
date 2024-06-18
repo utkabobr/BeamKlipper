@@ -73,6 +73,7 @@ I'm using UGREEN Type-c hub (Not affiliated, but I'm waiting for your request UG
 - Some devices may reset device path on firmware restart, you should use VID/PID naming in that case
 - No SSH (You won't be able to build firmware or run additional autorun services anyway)
 - Some devices doesn't support OTG and charging at the same time, you must solder directly to the battery pins in that case (Or use different device, it's up to you)
+- Only 250000 baud rate is supported (I don't want to forward this setting into Android USB driver, almost all configurations use 250000 anyway)
 
 # Building
 
