@@ -121,6 +121,9 @@ public class WebService extends Service {
                 response.addHeader("Cache-Control", "max-age=604800");
                 return response;
             } catch (IOException e) {
+                if (Prefs.isMainsailEnabled()) {
+                    return serveStatic("/index.html");
+                }
                 return newFixedLengthResponse(Status.NOT_FOUND, "text/plain", "Not Found");
             }
         }
