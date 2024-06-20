@@ -56,6 +56,7 @@ import ru.ytkab0bp.beamklipper.events.InstanceUpdatedEvent;
 import ru.ytkab0bp.beamklipper.events.WebFrontendChangedEvent;
 import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
+import ru.ytkab0bp.beamklipper.utils.LogUploader;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.beamklipper.view.EditTextRowView;
 import ru.ytkab0bp.beamklipper.view.HomeView;
@@ -86,6 +87,7 @@ public class MainActivity extends AppCompatActivity {
     private EditTextRowView nameRow;
     private EditTextRowView configRow;
     private TextView editOpenDirectoryRow;
+    private TextView editUploadLogsRow;
     private PreferenceSwitchView autostartRow;
     private TextView newOrEditContinue;
 
@@ -260,6 +262,7 @@ public class MainActivity extends AppCompatActivity {
                             newOrEditTitle.setText(R.string.edit_instance);
                             editInstance = inst;
                             editOpenDirectoryRow.setVisibility(View.VISIBLE);
+                            editUploadLogsRow.setVisibility(View.VISIBLE);
                             autostartRow.bind(getString(R.string.autostart), null, inst.autostart);
                             nameRow.bind(R.string.instance_name, inst.name);
                             configRow.setVisibility(View.GONE);
@@ -288,6 +291,7 @@ public class MainActivity extends AppCompatActivity {
                             newOrEditTitle.setText(R.string.new_instance);
                             editInstance = null;
                             editOpenDirectoryRow.setVisibility(View.GONE);
+                            editUploadLogsRow.setVisibility(View.GONE);
                             autostartRow.bind(getString(R.string.autostart), null, false);
                             nameRow.bind(R.string.instance_name, null);
                             configRow.bind(R.string.instance_config, null);
@@ -394,6 +398,17 @@ public class MainActivity extends AppCompatActivity {
             } catch (ActivityNotFoundException ignored) {}
         });
         newOrEditLayout.addView(editOpenDirectoryRow);
+
+        editUploadLogsRow = new TextView(this);
+        editUploadLogsRow.setText(R.string.upload_logs);
+        editUploadLogsRow.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
+        editUploadLogsRow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
+        editUploadLogsRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
+        editUploadLogsRow.setPadding(ViewUtils.dp(21), 0, ViewUtils.dp(21), 0);
+        editUploadLogsRow.setBackground(ViewUtils.resolveDrawable(this, android.R.attr.selectableItemBackground));
+        editUploadLogsRow.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        editUploadLogsRow.setOnClickListener(v -> LogUploader.uploadLogs(editInstance));
+        newOrEditLayout.addView(editUploadLogsRow);
 
         autostartRow = new PreferenceSwitchView(this);
         autostartRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));

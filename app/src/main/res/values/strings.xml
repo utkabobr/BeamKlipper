@@ -52,4 +52,7 @@
     <string name="ip_info" translatable="false">http://%s:%d/</string>
     <string name="general">General</string>
     <string name="web_frontend">Web frontend</string>
+    <string name="upload_logs">Upload logs to CODeRUS\' server</string>
+    <string name="upload_failed">Upload failed!</string>
+    <string name="upload_success">Upload finished</string>
 </resources>

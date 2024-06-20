@@ -47,4 +47,7 @@
     <string name="autostart">Автозапуск</string>
     <string name="general">Основное</string>
     <string name="web_frontend">Веб-интерфейс</string>
+    <string name="upload_logs">Загрузить логи на сервер CODeRUS</string>
+    <string name="upload_failed">Не удалось загрузить!</string>
+    <string name="upload_success">Загрузка завершена</string>
 </resources>
