@@ -34,7 +34,7 @@ Camera URL's are:
 - /webcam/?action=stream => `http://IP:8889/`
 - /webcam/?action=snapshot => `http://IP:8889/snapshot`
 
-Recommended camera config is mjpeg **stream** (Not adaptive mjpeg)
+Recommended camera config is mjpeg-**stream** (Not adaptive mjpeg) for Fluidd and UV4L-MJPEG for Mainsail
 
 # What's inside?
 

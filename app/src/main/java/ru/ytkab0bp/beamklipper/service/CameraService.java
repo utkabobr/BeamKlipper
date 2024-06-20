@@ -7,6 +7,8 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
 import android.hardware.camera2.CameraCharacteristics;
@@ -28,6 +30,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -38,7 +41,9 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Stack;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -95,24 +100,43 @@ public class CameraService extends Service {
         try {
             String id = cameraManager.getCameraIdList()[0];
             cameraManager.openCamera(Prefs.getCameraId() != null ? Prefs.getCameraId() : id, new CameraDevice.StateCallback() {
-                byte[] buffer;
+                Stack<byte[]> bufferStack = new Stack<>();
+                int bufferSize = 0;
 
                 @Override
                 public void onOpened(@NonNull CameraDevice camera) {
                     try {
                         List<Surface> targets = new ArrayList<>();
-                        ImageReader reader = ImageReader.newInstance(Prefs.getCameraWidth(), Prefs.getCameraHeight(), ImageFormat.JPEG, 3);
+                        ImageReader reader = ImageReader.newInstance(Prefs.getCameraWidth(), Prefs.getCameraHeight(), ImageFormat.YUV_420_888, 10);
                         reader.setOnImageAvailableListener(r -> {
                             Image img = r.acquireLatestImage();
                             if (img == null) return;
-                            ByteBuffer buf = img.getPlanes()[0].getBuffer();
-                            if (buffer == null || buffer.length < buf.limit()) {
-                                buffer = new byte[buf.limit()];
-                            }
-                            buf.position(0);
-                            buf.get(buffer, 0, buf.limit());
+                            ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
+                            ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
+                            ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
 
-                            deliverFrame(buffer, buf.limit());
+                            int ySize = yBuffer.remaining();
+                            int uSize = uBuffer.remaining();
+                            int vSize = vBuffer.remaining();
+
+                            int bufSize = ySize + uSize + vSize;
+                            if (bufferSize < bufSize) {
+                                bufferStack.clear();
+                                bufferSize = bufSize;
+                            }
+                            byte[] buffer = bufferStack.isEmpty() ? new byte[bufferSize] : bufferStack.pop();
+
+                            yBuffer.get(buffer, 0, ySize);
+                            vBuffer.get(buffer, ySize, vSize);
+                            uBuffer.get(buffer, ySize + vSize, uSize);
+
+                            YuvImage yuvImage = new YuvImage(buffer, ImageFormat.NV21, img.getWidth(), img.getHeight(), null);
+                            ByteArrayOutputStream conv = new ByteArrayOutputStream();
+                            yuvImage.compressToJpeg(new Rect(0, 0, img.getWidth(), img.getHeight()), 100, conv);
+                            bufferStack.push(buffer);
+
+                            byte[] converted = conv.toByteArray();
+                            deliverFrame(converted, converted.length, ()-> {});
 
                             img.close();
                         }, cameraHandler);
@@ -135,6 +159,9 @@ public class CameraService extends Service {
                                             selectedRange = r;
                                             break;
                                         }
+                                    }
+                                    if (selectedRange == null) {
+                                        selectedRange = ranges[0];
                                     }
 
                                     builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedRange);
@@ -170,7 +197,9 @@ public class CameraService extends Service {
         }
     }
 
-    private static void deliverFrame(byte[] data, int size) {
+    private static void deliverFrame(byte[] data, int size, Runnable onRelease) {
+        AtomicInteger done = new AtomicInteger();
+        int total = handlerThreads.size();
         for (CameraHandlerThread t : handlerThreads) {
             t.handler.post(()->{
                 try {
@@ -190,6 +219,9 @@ public class CameraService extends Service {
                         Log.e(TAG, "Failed to deliver frame", e);
                         t.quit();
                     }
+                }
+                if (done.incrementAndGet() == total) {
+                    onRelease.run();
                 }
             });
         }
