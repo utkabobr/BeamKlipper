@@ -9,8 +9,13 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioFormat;
+import android.media.AudioManager;
+import android.media.AudioTrack;
 import android.os.Binder;
 import android.os.Build;
+import android.os.Handler;
+import android.os.HandlerThread;
 import android.os.IBinder;
 import android.util.Log;
 
@@ -19,7 +24,6 @@ import androidx.annotation.Nullable;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.nanohttpd.protocols.http.IHTTPSession;
-import org.nanohttpd.protocols.http.NanoHTTPD;
 import org.nanohttpd.protocols.http.request.Method;
 import org.nanohttpd.protocols.http.response.Response;
 import org.nanohttpd.protocols.http.response.Status;
@@ -53,12 +57,20 @@ public class WebService extends Service {
     public final static int PORT = 8888;
     private final static int ID = 300000;
 
+    private final static int BEEPER_SAMPLE_RATE = 8000;
+
     private final static Pattern API_PATTERN = Pattern.compile("^/(printer|api|access|machine|server)/");
     private static SharedPreferences mPrefs;
     private static SimpleDateFormat dateFormat = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ROOT);
     private HttpServer httpServer = new HttpServer();
 
     private NotificationManager notificationManager;
+    private HandlerThread beeperThread;
+    private Handler beeperHandler;
+
+    static {
+        System.loadLibrary("beeper");
+    }
 
     @Nullable
     @Override
@@ -79,6 +91,9 @@ public class WebService extends Service {
     public void onCreate() {
         super.onCreate();
         mPrefs = KlipperApp.INSTANCE.getSharedPreferences("web", 0);
+        beeperThread = new HandlerThread("beeper");
+        beeperThread.start();
+        beeperHandler = new Handler(beeperThread.getLooper());
         try {
             httpServer.start();
         } catch (IOException e) {
@@ -90,12 +105,27 @@ public class WebService extends Service {
     public void onDestroy() {
         super.onDestroy();
         httpServer.stop();
+        beeperThread.quit();
+        beeperThread = null;
+        beeperHandler = null;
 
         stopForeground(true);
         notificationManager.cancel(ID);
     }
 
-    private static class HttpServer extends NanoWSD {
+    private static native float[] generateTone(int numSamples, float invFreq);
+
+    private void playTone(int duration, int frequency) {
+        int numSamples = duration * BEEPER_SAMPLE_RATE;
+        float[] buffer = generateTone(numSamples, (float) BEEPER_SAMPLE_RATE / frequency);
+        AudioTrack track = new AudioTrack(AudioManager.STREAM_MUSIC, BEEPER_SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT, 2 * numSamples, AudioTrack.MODE_STATIC);
+        track.write(buffer, 0, buffer.length, AudioTrack.WRITE_BLOCKING);
+        track.play();
+
+        beeperHandler.postDelayed(track::release, duration);
+    }
+
+    private class HttpServer extends NanoWSD {
 
         public HttpServer() {
             super(PORT);
@@ -135,6 +165,17 @@ public class WebService extends Service {
 
         @Override
         public Response serve(IHTTPSession session) {
+            if (session.getUri().equals("/beam/play_tone")) {
+                try {
+                    int duration = Integer.parseInt(session.getParameters().get("duration").get(0));
+                    int frequency = Integer.parseInt(session.getParameters().get("frequency").get(0));
+                    playTone(duration, frequency);
+                    return newFixedLengthResponse("{\"ok\": true}");
+                } catch (NumberFormatException e) {
+                    return newFixedLengthResponse("{\"ok\": false}");
+                }
+            }
+
             Matcher m = API_PATTERN.matcher(session.getUri());
             if (m.find()) {
                 try {

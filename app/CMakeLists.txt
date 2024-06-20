@@ -23,6 +23,11 @@ add_library(serial
         src/main/jni/serial.cpp
 )
 
+add_library(beeper
+        SHARED
+        src/main/jni/beeper.cpp
+)
+
 add_library(klippy_chelper
         SHARED
         src/main/klipper/klippy/chelper/itersolve.c
@@ -47,4 +52,8 @@ add_library(klippy_chelper
 
 target_link_libraries(
         serial
+        ${log-lib})
+
+target_link_libraries(
+        beeper
         ${log-lib})

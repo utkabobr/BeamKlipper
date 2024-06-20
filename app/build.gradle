@@ -236,7 +236,7 @@ tasks.register('bundleKlipper') {
     doFirst {
         var assets = file('src/main/assets')
         var versionFile = new File(assets, 'bundle_version')
-        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare'))
+        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare')) + '_beamext-' + file('src/main/assets/klipper/beam_ext/ext_version').text
         if (!versionFile.exists() || versionFile.text != version) {
             var files = new ArrayList<File>()
             collectFiles(file('src/main/assets/klipper/klippy'), files)
@@ -264,6 +264,19 @@ tasks.register('bundleKlipper') {
             collectFiles(klippy, files)
             files.each {
                 if (it.getName() == ".pylintrc") return
+
+                var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('klippy/extras/' + sub)
+                var f = new File(assets, 'klipper/klippy/extras/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            files.clear()
+            klippy = file('src/main/assets/klipper/beam_ext')
+            collectFiles(klippy, files)
+            files.each {
+                if (it.getName() == "ext_version") return
 
                 var sub = it.getAbsolutePath().substring(klippy.getAbsolutePath().length() + 1).replace('\\', '/')
                 arr.put('klippy/extras/' + sub)

@@ -293,6 +293,7 @@ public class CameraService extends Service {
             InputStream in = sock.getInputStream();
             BufferedReader r = new BufferedReader(new InputStreamReader(in));
             String line = r.readLine();
+            if (line == null) return;
             Matcher m = PATH_PATTERN.matcher(line);
             if (!m.find()) {
                 socket.close();

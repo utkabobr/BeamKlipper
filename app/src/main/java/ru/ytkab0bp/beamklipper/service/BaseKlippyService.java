@@ -14,6 +14,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.nio.charset.StandardCharsets;
 
+import ru.ytkab0bp.beamklipper.BundleInstaller;
 import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
@@ -74,10 +75,21 @@ public class BaseKlippyService extends BasePythonService {
                 fis.close();
 
                 String str = bos.toString();
+                boolean changed = false;
                 if (!str.contains("[virtual_sdcard]")) {
-                    str += "\n[virtual_sdcard]\npath: " + new File(inst.getPublicDirectory(), "gcodes").getAbsolutePath();
+                    str += "\n[virtual_sdcard]\npath: " + new File(inst.getPublicDirectory(), "gcodes").getAbsolutePath() + "\n";
+                    changed = true;
+                }
+                if (changed) {
                     FileOutputStream fos = new FileOutputStream(printerCfg);
                     fos.write(str.getBytes(StandardCharsets.UTF_8));
+                    fos.close();
+                }
+
+                File beeperCfg = new File(config, "beam_beeper.cfg");
+                if (!beeperCfg.exists()) {
+                    FileOutputStream fos = new FileOutputStream(beeperCfg);
+                    fos.write(BundleInstaller.readString(KlipperApp.INSTANCE.getAssets(), "klipper/beam_beeper.cfg").getBytes(StandardCharsets.UTF_8));
                     fos.close();
                 }
             } catch (Exception ignored) {}
