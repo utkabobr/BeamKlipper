@@ -47,6 +47,9 @@ public class LogUploader {
             TarOutputStream tar = new TarOutputStream(xz);
             byte[] buffer = new byte[10240];
             int c;
+
+            // We need temp buffer as jtar's TarOutputStream does very strange check in write(...), where we can't stream files into it
+            ByteArrayOutputStream tempStream = new ByteArrayOutputStream();
             if (klippyLog.exists()) {
                 tar.putNextEntry(new TarEntry(new TarHeader() {{
                     mode = 0100644;
@@ -55,11 +58,13 @@ public class LogUploader {
                 }}));
                 FileInputStream fis = new FileInputStream(klippyLog);
                 while ((c = fis.read(buffer)) != -1) {
-                    tar.write(buffer, 0, c);
+                    tempStream.write(buffer, 0, c);
                 }
                 fis.close();
+                tar.write(tempStream.toByteArray());
             }
             if (moonrakerLog.exists()) {
+                tempStream.reset();
                 tar.putNextEntry(new TarEntry(new TarHeader() {{
                     mode = 0100644;
                     name.append("moonraker.log");
@@ -67,9 +72,10 @@ public class LogUploader {
                 }}));
                 FileInputStream fis = new FileInputStream(moonrakerLog);
                 while ((c = fis.read(buffer)) != -1) {
-                    tar.write(buffer, 0, c);
+                    tempStream.write(buffer, 0, c);
                 }
                 fis.close();
+                tar.write(tempStream.toByteArray());
             }
 
             tar.close();
