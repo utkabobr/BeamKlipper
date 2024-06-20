@@ -15,7 +15,7 @@
     <string name="notifications_hide_channel">Скрытие канала уведомлений</string>
     <string name="notifications_hide_channel_info">Вам нужно отключить канал «%s»</string>
     <string name="next">Дальше</string>
-    <string name="instances">Установки</string>
+    <string name="instances">Профили</string>
     <string name="instance_starting">Запуск…</string>
     <string name="instance_stopping">Остановка…</string>
     <string name="instance_name">Имя</string>
@@ -24,9 +24,9 @@
     <string name="instance_delete">Удалить «%s»?</string>
     <string name="instance_delete_confirm">Вы уверены?</string>
     <string name="instance_ok">ОК</string>
-    <string name="new_instance">Новая установка</string>
-    <string name="edit_instance">Редактирование установки</string>
-    <string name="edit_open_directory">Открыть папку установки</string>
+    <string name="new_instance">Новый профиль</string>
+    <string name="edit_instance">Редактирование профиля</string>
+    <string name="edit_open_directory">Открыть папку профиля</string>
     <string name="no_free_slots">Нет свободных слотов</string>
     <string name="no_free_slots_description">Одновременно может быть запущено не более %d экземпляров.</string>
     <string name="error">Ошибка</string>
