@@ -45,6 +45,24 @@ Beam Klipper bundles:
 - [Happy Hare](https://github.com/moggieuk/Happy-Hare)
 - [Mainsail](https://github.com/mainsail-crew/mainsail)
 
+# Beam extensions
+
+Beam Klipper provides additional extensions to control some built-in features.
+
+### Camera
+
+Include `[beam_camera]` into your printer.cfg
+
+`SET_CAMERA_FLASHLIGHT ENABLED=true/false` - Toggles flashlight
+
+`SET_CAMERA_FOCUS AUTOFOCUS=true/false FOCUS_DISTANCE=0...?` - Sets camera autofocus state and focus distance if autofocus is disabled. `FOCUS_DISTANCE` is expressed in dioptres, it may vary from device to device
+
+### Beeper
+
+Include `[include beam_beeper.cfg]` into your printer.cfg
+
+Use `M300` macro [as defined in docs](https://marlinfw.org/docs/gcode/M300.html)
+
 # Autostart
 
 You can put the app to autostart by setting needed printers to autostart **AND** setting app as default launcher.
