@@ -9,6 +9,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
 import android.media.AudioTrack;
@@ -113,12 +114,27 @@ public class WebService extends Service {
         notificationManager.cancel(ID);
     }
 
-    private static native float[] generateTone(int numSamples, float invFreq);
+    private static native float[] generateTone(int numSamples, float freq);
 
     private void playTone(int duration, int frequency) {
         int numSamples = duration * BEEPER_SAMPLE_RATE;
-        float[] buffer = generateTone(numSamples, (float) BEEPER_SAMPLE_RATE / frequency);
-        AudioTrack track = new AudioTrack(AudioManager.STREAM_MUSIC, BEEPER_SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT, 2 * numSamples, AudioTrack.MODE_STATIC);
+        float[] buffer = generateTone(numSamples, (float) frequency / BEEPER_SAMPLE_RATE);
+        AudioTrack track;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            track = new AudioTrack.Builder().setAudioFormat(new AudioFormat.Builder()
+                            .setChannelMask(AudioFormat.CHANNEL_OUT_MONO)
+                            .setEncoding(AudioFormat.ENCODING_PCM_FLOAT)
+                            .setSampleRate(BEEPER_SAMPLE_RATE)
+                    .build())
+                    .setAudioAttributes(new AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build())
+                    .setBufferSizeInBytes(2 * numSamples)
+                    .setTransferMode(AudioTrack.MODE_STATIC)
+                    .build();
+        } else {
+            track = new AudioTrack(AudioManager.STREAM_MUSIC, BEEPER_SAMPLE_RATE, AudioFormat.CHANNEL_OUT_MONO, AudioFormat.ENCODING_PCM_FLOAT, 2 * numSamples, AudioTrack.MODE_STATIC);
+        }
         track.write(buffer, 0, buffer.length, AudioTrack.WRITE_BLOCKING);
         track.play();
 
