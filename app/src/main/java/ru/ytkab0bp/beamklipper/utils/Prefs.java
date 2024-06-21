@@ -59,4 +59,28 @@ public class Prefs {
         mPrefs.edit().putInt("usb_device_naming", naming).apply();
         UsbSerialManager.connectAll();
     }
+
+    public static boolean isFlashlightEnabled() {
+        return mPrefs.getBoolean("flashlight", false);
+    }
+
+    public static void setFlashlightEnabled(boolean f) {
+        mPrefs.edit().putBoolean("flashlight", f).apply();
+    }
+
+    public static boolean isAutofocusEnabled() {
+        return mPrefs.getBoolean("autofocus", false);
+    }
+
+    public static void setAutofocusEnabled(boolean f) {
+        mPrefs.edit().putBoolean("autofocus", f).apply();
+    }
+
+    public static float getFocusDistance() {
+        return mPrefs.getFloat("focus", 0);
+    }
+
+    public static void setFocusDistance(float f) {
+        mPrefs.edit().putFloat("focus", f).apply();
+    }
 }

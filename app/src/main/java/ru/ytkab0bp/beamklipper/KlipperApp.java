@@ -18,6 +18,7 @@ import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.eventbus.EventBus;
 
 public class KlipperApp extends Application {
+    public final static String PERMISSION = BuildConfig.APPLICATION_ID + ".permission.INTERNAL_BROADCASTS";
     public final static String SERVICES_CHANNEL = "services";
 
     public static KlipperApp INSTANCE;

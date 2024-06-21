@@ -4,8 +4,10 @@ import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
@@ -22,6 +24,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.Process;
 import android.util.Log;
 import android.util.Range;
 import android.view.Surface;
@@ -41,18 +44,27 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Stack;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ru.ytkab0bp.beamklipper.BuildConfig;
 import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.R;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
+import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 
 @SuppressLint("MissingPermission")
 public class CameraService extends Service {
+    public final static String ACTION_TOGGLE_FLASHLIGHT = BuildConfig.APPLICATION_ID + ".action.TOGGLE_FLASHLIGHT";
+    public final static String ACTION_TOGGLE_FOCUS = BuildConfig.APPLICATION_ID + ".action.TOGGLE_FOCUS";
+    public final static String KEY_FLASHLIGHT = "flashlight";
+    public final static String KEY_AUTOFOCUS = "autofocus";
+    public final static String KEY_FOCUS = "focus";
+
     private final static String TAG = "beam_camera";
     private final static Pattern PATH_PATTERN = Pattern.compile("GET ([^\\r\\n]+) HTTP/1\\.[0-1]");
 
@@ -68,6 +80,37 @@ public class CameraService extends Service {
     private HandlerThread cameraThread;
     private Handler cameraHandler;
     private CameraCaptureSession captureSession;
+    private CaptureRequest.Builder captureRequestBuilder;
+
+    private BroadcastReceiver receiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            if (Objects.equals(intent.getAction(), ACTION_TOGGLE_FLASHLIGHT)) {
+                boolean flashlight = intent.getBooleanExtra(KEY_FLASHLIGHT, false);
+                Prefs.setFlashlightEnabled(flashlight);
+
+                try {
+                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, flashlight ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_OFF);
+                    captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Failed to update camera settings", e);
+                }
+            } else if (Objects.equals(intent.getAction(), ACTION_TOGGLE_FOCUS)) {
+                boolean autofocus = intent.getBooleanExtra(KEY_AUTOFOCUS, false);
+                Prefs.setAutofocusEnabled(autofocus);
+                float focus = intent.getFloatExtra(KEY_FOCUS, 0);
+                Prefs.setFocusDistance(focus);
+
+                try {
+                    captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, autofocus ? CaptureRequest.CONTROL_AF_MODE_AUTO : CaptureRequest.CONTROL_AF_MODE_OFF);
+                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, focus);
+                    captureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
+                } catch (CameraAccessException e) {
+                    Log.e(TAG, "Failed to update camera settings", e);
+                }
+            }
+        }
+    };
 
     @Nullable
     @Override
@@ -84,6 +127,7 @@ public class CameraService extends Service {
         return new Binder();
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Override
     public void onCreate() {
         super.onCreate();
@@ -91,7 +135,7 @@ public class CameraService extends Service {
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
         cameraHandler = new Handler(cameraThread.getLooper());
-        cameraHandler.post(()-> android.os.Process.setThreadPriority(-10));
+        cameraHandler.post(()-> Process.setThreadPriority(-10));
 
         serverThread = new ServerThread();
         serverThread.start();
@@ -149,7 +193,7 @@ public class CameraService extends Service {
                                 captureSession = session;
 
                                 try {
-                                    CaptureRequest.Builder builder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+                                    captureRequestBuilder = camera.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
 
                                     CameraCharacteristics chars = cameraManager.getCameraCharacteristics(camera.getId());
                                     Range<Integer>[] ranges = chars.get(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES);
@@ -164,9 +208,12 @@ public class CameraService extends Service {
                                         selectedRange = ranges[0];
                                     }
 
-                                    builder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedRange);
-                                    builder.addTarget(reader.getSurface());
-                                    session.setRepeatingRequest(builder.build(), null, null);
+                                    captureRequestBuilder.set(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, selectedRange);
+                                    captureRequestBuilder.set(CaptureRequest.FLASH_MODE, Prefs.isFlashlightEnabled() ? CaptureRequest.FLASH_MODE_TORCH : CaptureRequest.FLASH_MODE_OFF);
+                                    captureRequestBuilder.set(CaptureRequest.LENS_FOCUS_DISTANCE, Prefs.getFocusDistance());
+                                    captureRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, Prefs.isAutofocusEnabled() ? CaptureRequest.CONTROL_AF_MODE_AUTO : CaptureRequest.CONTROL_AF_MODE_OFF);
+                                    captureRequestBuilder.addTarget(reader.getSurface());
+                                    session.setRepeatingRequest(captureRequestBuilder.build(), null, null);
                                 } catch (CameraAccessException e) {
                                     throw new RuntimeException(e);
                                 }
@@ -194,6 +241,14 @@ public class CameraService extends Service {
             }, cameraHandler);
         } catch (Exception e) {
             Log.e(TAG, "Failed to open camera");
+        }
+
+        IntentFilter filter = new IntentFilter(ACTION_TOGGLE_FLASHLIGHT);
+        filter.addAction(ACTION_TOGGLE_FOCUS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(receiver, filter, KlipperApp.PERMISSION, ViewUtils.getUiHandler(), Context.RECEIVER_EXPORTED);
+        } else {
+            registerReceiver(receiver, filter, KlipperApp.PERMISSION, ViewUtils.getUiHandler());
         }
     }
 
@@ -244,6 +299,8 @@ public class CameraService extends Service {
         cameraHandler = null;
         stopForeground(true);
         notificationManager.cancel(ID);
+
+        unregisterReceiver(receiver);
 
         android.os.Process.killProcess(android.os.Process.myPid());
     }

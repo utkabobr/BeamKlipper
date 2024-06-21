@@ -32,6 +32,10 @@ public class ViewUtils {
         uiHandler.postDelayed(r, delay);
     }
 
+    public static Handler getUiHandler() {
+        return uiHandler;
+    }
+
     public static Typeface getTypeface(String key) {
         Typeface typeface = typefaceCache.get(key);
         if (typeface == null) {

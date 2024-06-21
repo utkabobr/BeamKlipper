@@ -179,9 +179,14 @@ public class WebService extends Service {
             return dateFormat.format(new Date(lastModified));
         }
 
+        private boolean checkRemote(IHTTPSession session) {
+            return !"127.0.0.1".equals(session.getRemoteIpAddress());
+        }
+
         @Override
         public Response serve(IHTTPSession session) {
             if (session.getUri().equals("/beam/play_tone")) {
+                if (checkRemote(session)) return newFixedLengthResponse("{\"ok\": false}");
                 try {
                     int duration = Integer.parseInt(session.getParameters().get("duration").get(0));
                     int frequency = Integer.parseInt(session.getParameters().get("frequency").get(0));
@@ -190,6 +195,20 @@ public class WebService extends Service {
                 } catch (NumberFormatException e) {
                     return newFixedLengthResponse("{\"ok\": false}");
                 }
+            }
+            if (session.getUri().equals("/beam/set_camera_flashlight")) {
+                if (checkRemote(session)) return newFixedLengthResponse("{\"ok\": false}");
+                boolean flashlight = session.getParameters().containsKey("enabled") && session.getParameters().get("enabled").get(0).equals("true");
+                KlipperApp.INSTANCE.sendBroadcast(new Intent(CameraService.ACTION_TOGGLE_FLASHLIGHT).putExtra(CameraService.KEY_FLASHLIGHT, flashlight), KlipperApp.PERMISSION);
+                return newFixedLengthResponse("{\"ok\": true}");
+            }
+            if (session.getUri().equals("/beam/set_camera_focus")) {
+                if (checkRemote(session)) return newFixedLengthResponse("{\"ok\": false}");
+                boolean autofocus = session.getParameters().containsKey("autofocus") && session.getParameters().get("autofocus").get(0).equals("true");
+                float distance = session.getParameters().containsKey("focus") ? Float.parseFloat(session.getParameters().get("focus").get(0)) : 0;
+
+                KlipperApp.INSTANCE.sendBroadcast(new Intent(CameraService.ACTION_TOGGLE_FOCUS).putExtra(CameraService.KEY_AUTOFOCUS, autofocus).putExtra(CameraService.KEY_FOCUS, distance), KlipperApp.PERMISSION);
+                return newFixedLengthResponse("{\"ok\": true}");
             }
 
             Matcher m = API_PATTERN.matcher(session.getUri());
