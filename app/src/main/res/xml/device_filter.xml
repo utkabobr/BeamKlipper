@@ -25,6 +25,8 @@
     <usb-device vendor-id="6790" product-id="21795" /> <!-- 0x5523: CH341A -->
     <usb-device vendor-id="6790" product-id="29987" /> <!-- 0x7523: CH340 -->
 
+    <usb-device vendor-id="3544" product-id="14081" />
+
     <!-- CDC driver -->
     <usb-device vendor-id="9025" />                   <!-- 0x2341 / ......: Arduino -->
     <usb-device vendor-id="5824" product-id="1155" /> <!-- 0x16C0 / 0x0483: Teensyduino  -->
