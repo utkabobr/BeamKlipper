@@ -3,10 +3,12 @@ package ru.ytkab0bp.beamklipper;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.PendingIntent;
+import android.app.UiModeManager;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
@@ -102,11 +104,18 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout badgesLayout;
     private RefBadgeView[] refBadges = new RefBadgeView[3];
 
-    @SuppressLint("BatteryLife")
+    @SuppressLint({"BatteryLife", "InlinedApi"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         EdgeToEdge.enable(this);
         super.onCreate(savedInstanceState);
+
+        UiModeManager uiModeManager = (UiModeManager) (getSystemService(UI_MODE_SERVICE));
+        if (uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION || getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEVISION) ||
+                getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK) || !getPackageManager().hasSystemFeature("android.hardware.touchscreen") ||
+                !getPackageManager().hasSystemFeature("android.hardware.telephony")) {
+            PermissionsChecker.setIgnoreNotificationsChannel(true);
+        }
 
         FrameLayout fl = new FrameLayout(this);
 
@@ -518,7 +527,7 @@ public class MainActivity extends AppCompatActivity {
             });
             ll.addView(notificationsRow);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !PermissionsChecker.ignoreNotificationsChannel()) {
             hideServicesChannelRow = new PermissionRowView(this);
             hideServicesChannelRow.bind(R.string.notifications_hide_channel, PermissionsChecker.isNotificationsChannelHidden(), true);
             hideServicesChannelRow.setOnClickListener(v -> {
