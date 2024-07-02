@@ -10,3 +10,6 @@
 [submodule "app/src/main/happyhare"]
 	path = app/src/main/happyhare
 	url = https://github.com/moggieuk/Happy-Hare
+[submodule "app/src/main/klipper_tmc_autotune"]
+	path = app/src/main/klipper_tmc_autotune
+	url = https://github.com/andrewmcgr/klipper_tmc_autotune
