@@ -42,8 +42,9 @@ Beam Klipper bundles:
 - [Klipper](https://github.com/KevinOConnor/klipper)
 - [Moonraker](https://github.com/Arksine/moonraker)
 - [Fluidd](https://github.com/fluidd-core/fluidd)
-- [Happy Hare](https://github.com/moggieuk/Happy-Hare)
 - [Mainsail](https://github.com/mainsail-crew/mainsail)
+- [Happy Hare](https://github.com/moggieuk/Happy-Hare)
+- [Klipper TMC Autotune](https://github.com/andrewmcgr/klipper_tmc_autotune)
 
 # Beam extensions
 
