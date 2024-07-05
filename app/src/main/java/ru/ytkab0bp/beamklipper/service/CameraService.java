@@ -24,6 +24,7 @@ import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
+import android.os.PowerManager;
 import android.os.Process;
 import android.util.Log;
 import android.util.Range;
@@ -82,6 +83,8 @@ public class CameraService extends Service {
     private CameraCaptureSession captureSession;
     private CaptureRequest.Builder captureRequestBuilder;
 
+    private PowerManager.WakeLock wakeLock;
+
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -127,10 +130,14 @@ public class CameraService extends Service {
         return new Binder();
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
+    @SuppressLint({"UnspecifiedRegisterReceiverFlag", "WakelockTimeout"})
     @Override
     public void onCreate() {
         super.onCreate();
+
+        PowerManager powerManager = (PowerManager) getSystemService(POWER_SERVICE);
+        wakeLock = powerManager.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "BeamKlipper::CameraWakeLock");
+        wakeLock.acquire();
 
         cameraThread = new HandlerThread("camera");
         cameraThread.start();
@@ -301,6 +308,7 @@ public class CameraService extends Service {
         notificationManager.cancel(ID);
 
         unregisterReceiver(receiver);
+        wakeLock.release();
 
         android.os.Process.killProcess(android.os.Process.myPid());
     }
