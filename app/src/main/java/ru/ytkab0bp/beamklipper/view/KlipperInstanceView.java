@@ -109,6 +109,7 @@ public class KlipperInstanceView extends LinearLayout {
     }
 
     public void setColorIndex(int i) {
+        i = Math.abs(i);
         switch (i) {
             default:
             case 0:
