@@ -4,6 +4,7 @@ import android.app.Notification;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.system.Os;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -66,6 +67,13 @@ public class BaseMoonrakerService extends BasePythonService {
             File socket = new File(inst.getDirectory(), "klippy_uds");
             File tempFramesDir = new File(inst.getDirectory(), "timelapse_frames");
             File moonSocket = new File(inst.getDirectory(), "moonraker_uds");
+
+            File resonancesLink = new File(config, "beam_resonances");
+            File fromResonances = new File(KlipperApp.INSTANCE.getCacheDir(), "resonances");
+            if (!resonancesLink.exists()) {
+                fromResonances.mkdirs();
+                Os.symlink(fromResonances.getAbsolutePath(), resonancesLink.getAbsolutePath());
+            }
 
             File moonrakerCfg = new File(config, "moonraker.conf");
             if (!moonrakerCfg.exists()) {

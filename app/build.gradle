@@ -50,6 +50,7 @@ android {
                 install "ldap3==2.9.1"
                 install "python-periphery==2.4.1"
                 install "pynacl==1.5.0"
+                install "numpy==1.26.2"
             }
             pyc {
                 src false

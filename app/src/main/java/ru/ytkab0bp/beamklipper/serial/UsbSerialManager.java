@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import ru.ytkab0bp.beamklipper.BuildConfig;
 import ru.ytkab0bp.beamklipper.KlipperApp;
@@ -30,6 +31,7 @@ import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 
 public class UsbSerialManager {
     public final static String ACTION_ON_DEVICE_CONNECTED = BuildConfig.APPLICATION_ID + ".action.DEVICE_CONNECTED";
+    public final static int FLAG_RESET_ARDUINO = 1;
     private final static boolean DEBUG = false;
     private final static String TAG = "beam_usb_serial";
 
@@ -124,17 +126,26 @@ public class UsbSerialManager {
         }
     }
 
-    private static void connect(UsbSerialDriver drv) {
+    public static void connect(UsbSerialDriver drv) {
+        connect(drv, 0);
+    }
+
+    public static void connect(UsbSerialDriver drv, int flags) {
         if (!mUsbManager.hasPermission(drv.getDevice())) {
             mUsbManager.requestPermission(drv.getDevice(), PendingIntent.getBroadcast(KlipperApp.INSTANCE, 0, new Intent(UsbSerialManager.ACTION_ON_DEVICE_CONNECTED).setPackage(KlipperApp.INSTANCE.getPackageName()), PendingIntent.FLAG_MUTABLE | PendingIntent.FLAG_NO_CREATE));
             return;
         }
 
+        boolean resetArduino = (flags & FLAG_RESET_ARDUINO) != 0;
+        AtomicInteger currentBaudRate = new AtomicInteger(250000);
         UsbSerialPort port = drv.getPorts().get(0);
         try {
             port.open(mUsbManager.openDevice(drv.getDevice()));
             port.setRTS(true);
-            port.setParameters(250000, UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
+            if (resetArduino) {
+                port.setDTR(true);
+            }
+            port.setParameters(currentBaudRate.get(), UsbSerialPort.DATABITS_8, UsbSerialPort.STOPBITS_1, UsbSerialPort.PARITY_NONE);
         } catch (Exception e) {
             Log.e(TAG, "Failed to open device " + drv.getDevice(), e);
             return;
@@ -145,6 +156,7 @@ public class UsbSerialManager {
         nativePort.setProxy((data) -> {
             try {
                 port.write(data, 0);
+                port.setDTR(false);
                 port.setRTS(false);
                 if (DEBUG) {
                     Log.d(TAG, "Write " + Arrays.toString(data));
@@ -164,7 +176,13 @@ public class UsbSerialManager {
         }
     }
 
-    private static void close(String uid) {
+    public static UsbDevice getDevice(String uid) {
+        UsbSerialPort port = portMap.get(uid);
+        if (port == null) return null;
+        return port.getDevice();
+    }
+
+    public static void close(String uid) {
         NativeSerialPort nativePort = nativePortMap.remove(uid);
         UsbSerialPort port = portMap.remove(uid);
         ReadThread thread = readThreadMap.remove(uid);

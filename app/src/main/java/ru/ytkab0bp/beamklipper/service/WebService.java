@@ -9,6 +9,7 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.hardware.usb.UsbDevice;
 import android.media.AudioAttributes;
 import android.media.AudioFormat;
 import android.media.AudioManager;
@@ -24,6 +25,8 @@ import androidx.annotation.Nullable;
 
 import com.arthenica.ffmpegkit.FFmpegKit;
 import com.arthenica.ffmpegkit.FFmpegSession;
+import com.hoho.android.usbserial.driver.UsbSerialDriver;
+import com.hoho.android.usbserial.driver.UsbSerialProber;
 
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
@@ -37,6 +40,7 @@ import org.nanohttpd.protocols.websockets.OpCode;
 import org.nanohttpd.protocols.websockets.WebSocket;
 import org.nanohttpd.protocols.websockets.WebSocketFrame;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -56,7 +60,10 @@ import java.util.regex.Pattern;
 
 import ru.ytkab0bp.beamklipper.KlipperApp;
 import ru.ytkab0bp.beamklipper.R;
+import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
+import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
+import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 
 public class WebService extends Service {
     public final static int PORT = 8888;
@@ -189,6 +196,24 @@ public class WebService extends Service {
 
         @Override
         public Response serve(IHTTPSession session) {
+            if (session.getUri().equals("/beam/arduino_reset")) {
+                if (checkRemote(session)) return newFixedLengthResponse("");
+
+                String uid = session.getParameters().get("serial").get(0).substring(new File(KlipperApp.INSTANCE.getFilesDir(), "serial").getAbsolutePath().length() + 1);
+                UsbDevice device = UsbSerialManager.getDevice(uid);
+                if (device != null) {
+                    UsbSerialManager.close(uid);
+                    ViewUtils.postOnMainThread(()->{
+                        UsbSerialProber prober = new UsbSerialProber(KlipperProbeTable.getInstance());
+                        UsbSerialDriver drv = prober.probeDevice(device);
+                        if (drv != null) {
+                            UsbSerialManager.connect(drv, UsbSerialManager.FLAG_RESET_ARDUINO);
+                        }
+                    }, 100);
+                }
+
+                return newFixedLengthResponse("{\"ok\": true}");
+            }
             if (session.getUri().equals("/beam/ffmpeg")) {
                 if (checkRemote(session)) return newFixedLengthResponse("");
                 FFmpegSession s = FFmpegKit.execute(session.getParameters().get("cmd").get(0));

@@ -53,6 +53,12 @@ public class BundleInstaller {
             FileOutputStream fos = new FileOutputStream(new File(root, "moonraker/moonraker/utils/sysfs_devs.py"));
             fos.write(str.getBytes(StandardCharsets.UTF_8));
             fos.close();
+
+            str = readString(assets, "klipper/klippy/extras/resonance_tester.py");
+            str = str.replace("${TEMP_PATH}", new File(KlipperApp.INSTANCE.getCacheDir(), "resonances").getAbsolutePath());
+            fos = new FileOutputStream(new File(root, "klipper/klippy/extras/resonance_tester.py"));
+            fos.write(str.getBytes(StandardCharsets.UTF_8));
+            fos.close();
         } catch (IOException | JSONException | PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }
