@@ -101,7 +101,7 @@ public class BaseMoonrakerService extends BasePythonService {
                 fos.close();
             }
 
-            runPython(new File(KlipperApp.INSTANCE.getFilesDir(), "moonraker"), "bootstrap", "moonraker.py", "-u", moonSocket.getAbsolutePath(), "-l", logs.getAbsolutePath(), "-d", inst.getPublicDirectory().getAbsolutePath(), "-c", moonrakerCfg.getAbsolutePath(), "-v");
+            runPython(new File(KlipperApp.INSTANCE.getFilesDir(), "moonraker"), "bootstrap", "moonraker.py", "-u", moonSocket.getAbsolutePath(), "-l", logs.getAbsolutePath(), "-d", inst.getPublicDirectory().getAbsolutePath(), "-c", moonrakerCfg.getAbsolutePath());
         } catch (Exception e) {
             Log.e("moonraker_" + index, "Failed to start moonraker", e);
         }
