@@ -25,3 +25,4 @@ local.properties
 /app/src/main/assets/fluidd/
 /app/src/main/assets/moonraker/moonraker/
 app/release/
+app/src/main/assets/moonraker/timelapse.cfg

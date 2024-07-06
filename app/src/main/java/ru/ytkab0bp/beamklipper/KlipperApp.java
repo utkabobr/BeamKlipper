@@ -12,7 +12,6 @@ import java.lang.reflect.Method;
 import java.util.Objects;
 
 import ru.ytkab0bp.beamklipper.db.BeamDB;
-import ru.ytkab0bp.beamklipper.serial.HostSerialHandler;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.eventbus.EventBus;
@@ -24,8 +23,6 @@ public class KlipperApp extends Application {
     public static KlipperApp INSTANCE;
     public static BeamDB DATABASE;
     public static EventBus EVENT_BUS = EventBus.newBus("main");
-
-    private static HostSerialHandler hostSerialHandler;
 
     @Override
     public void onCreate() {
@@ -43,7 +40,6 @@ public class KlipperApp extends Application {
         }
 
         if (Objects.equals(getProcessNameCompat(), getPackageName())) {
-//            hostSerialHandler = new HostSerialHandler();
             UsbSerialManager.init(this);
         }
     }

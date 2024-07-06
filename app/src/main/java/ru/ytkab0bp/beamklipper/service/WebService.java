@@ -22,6 +22,9 @@ import android.util.Log;
 
 import androidx.annotation.Nullable;
 
+import com.arthenica.ffmpegkit.FFmpegKit;
+import com.arthenica.ffmpegkit.FFmpegSession;
+
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.handshake.ServerHandshake;
 import org.nanohttpd.protocols.http.IHTTPSession;
@@ -186,6 +189,11 @@ public class WebService extends Service {
 
         @Override
         public Response serve(IHTTPSession session) {
+            if (session.getUri().equals("/beam/ffmpeg")) {
+                if (checkRemote(session)) return newFixedLengthResponse("");
+                FFmpegSession s = FFmpegKit.execute(session.getParameters().get("cmd").get(0));
+                return newFixedLengthResponse(s.getOutput());
+            }
             if (session.getUri().equals("/beam/play_tone")) {
                 if (checkRemote(session)) return newFixedLengthResponse("{\"ok\": false}");
                 try {

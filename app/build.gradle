@@ -96,12 +96,14 @@ dependencies {
     implementation 'androidx.core:core:1.13.1'
     implementation 'androidx.activity:activity:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.7.0'
-    implementation "com.goterl:lazysodium-android:5.1.0@aar"
-    implementation "org.java-websocket:Java-WebSocket:1.5.6"
+    implementation 'com.goterl:lazysodium-android:5.1.0@aar'
+    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'org.tukaani:xz:1.9'
     implementation 'org.kamranzafar:jtar:2.3'
-    implementation("com.squareup.okhttp3:okhttp:3.12.6")
+    implementation 'com.squareup.okhttp3:okhttp:3.12.6'
+    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2.LTS'
+
     implementation project(":eventbus")
     implementation project(":eventbus_api")
     annotationProcessor project(":eventbus_processor")
@@ -236,7 +238,7 @@ tasks.register('bundleKlipper') {
     doFirst {
         var assets = file('src/main/assets')
         var versionFile = new File(assets, 'bundle_version')
-        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare')) + '_klipper_tmc_autotune-' + getGitCommitHash(file('src/main/klipper_tmc_autotune')) + '_beamext-' + file('src/main/assets/klipper/beam_ext/ext_version').text
+        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare')) + '_klipper_tmc_autotune-' + getGitCommitHash(file('src/main/klipper_tmc_autotune')) + '_moonraker_timelapse-' + getGitCommitHash(file('src/main/moonraker_timelapse')) + '_beamext-' + file('src/main/assets/klipper/beam_ext/ext_version').text
         if (!versionFile.exists() || versionFile.text != version) {
             var files = new ArrayList<File>()
             collectFiles(file('src/main/assets/klipper/klippy'), files)
@@ -349,6 +351,12 @@ tasks.register('bundleKlipper') {
                 f.getParentFile().mkdirs()
                 Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
             }
+
+            arr.put('moonraker/components/timelapse.py')
+            Files.copy(file('src/main/moonraker_timelapse/component/timelapse.py').toPath(), new File(assets, 'moonraker/moonraker/components/timelapse.py').toPath(), StandardCopyOption.REPLACE_EXISTING)
+
+            arr.put('timelapse.cfg')
+            Files.copy(file('src/main/moonraker_timelapse/klipper_macro/timelapse.cfg').toPath(), new File(assets, 'moonraker/timelapse.cfg').toPath(), StandardCopyOption.REPLACE_EXISTING)
 
             index.put('moonraker', arr)
 

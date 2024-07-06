@@ -266,11 +266,15 @@ public class CameraService extends Service {
             t.handler.post(()->{
                 try {
                     OutputStream out = t.out;
-                    out.write("--camera-frame\r\n".getBytes(StandardCharsets.UTF_8));
-                    out.write(("Content-Type: image/jpeg\r\n" +
-                               "Content-Length: " + size + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+                    if (!t.oneShot) {
+                        out.write("--camera-frame\r\n".getBytes(StandardCharsets.UTF_8));
+                        out.write(("Content-Type: image/jpeg\r\n" +
+                                "Content-Length: " + size + "\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+                    }
                     out.write(data, 0, size);
-                    out.write("\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                    if (!t.oneShot) {
+                        out.write("\r\n\r\n".getBytes(StandardCharsets.UTF_8));
+                    }
                     out.flush();
 
                     if (t.oneShot) {
@@ -322,6 +326,7 @@ public class CameraService extends Service {
 
         @Override
         public void run() {
+            Process.setThreadPriority(-10);
             try {
                 ServerSocket socket = new ServerSocket(PORT);
 
@@ -352,7 +357,7 @@ public class CameraService extends Service {
         private Handler handler;
 
         CameraHandlerThread(Socket sock) throws IOException {
-            super("beam_camera_handler");
+            super("beam_camera_handler", -10);
 
             socket = sock;
             InputStream in = sock.getInputStream();

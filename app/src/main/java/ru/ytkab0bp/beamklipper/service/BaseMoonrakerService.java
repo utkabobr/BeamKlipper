@@ -62,7 +62,9 @@ public class BaseMoonrakerService extends BasePythonService {
             File logs = new File(inst.getPublicDirectory(), "logs/moonraker.log");
             logs.getParentFile().mkdirs();
             File config = new File(inst.getPublicDirectory(), "config");
+            File timelapseOutputDir = new File(inst.getPublicDirectory(), "timelapses");
             File socket = new File(inst.getDirectory(), "klippy_uds");
+            File tempFramesDir = new File(inst.getDirectory(), "timelapse_frames");
             File moonSocket = new File(inst.getDirectory(), "moonraker_uds");
 
             File moonrakerCfg = new File(config, "moonraker.conf");
@@ -87,10 +89,19 @@ public class BaseMoonrakerService extends BasePythonService {
                 fos.write(BundleInstaller.readString(KlipperApp.INSTANCE.getAssets(), "moonraker/default.conf")
                         .replace("${KLIPPY_UDS}", socket.getAbsolutePath())
                         .replace("${MOONRAKER_PORT}", String.valueOf(freePort))
+                        .replace("${TIMELAPSE_FRAME_PATH}", tempFramesDir.getAbsolutePath())
+                        .replace("${TIMELAPSE_OUTPUT}", timelapseOutputDir.getAbsolutePath())
                         .getBytes(StandardCharsets.UTF_8));
                 fos.close();
             }
-            runPython(new File(KlipperApp.INSTANCE.getFilesDir(), "moonraker"), "bootstrap", "moonraker.py", "-u", moonSocket.getAbsolutePath(), "-l", logs.getAbsolutePath(), "-d", inst.getPublicDirectory().getAbsolutePath(), "-c", moonrakerCfg.getAbsolutePath());
+            File timelapseCfg = new File(config, "timelapse.cfg");
+            if (!timelapseCfg.exists()) {
+                FileOutputStream fos = new FileOutputStream(timelapseCfg);
+                fos.write(BundleInstaller.readString(KlipperApp.INSTANCE.getAssets(), "moonraker/timelapse.cfg").getBytes(StandardCharsets.UTF_8));
+                fos.close();
+            }
+
+            runPython(new File(KlipperApp.INSTANCE.getFilesDir(), "moonraker"), "bootstrap", "moonraker.py", "-u", moonSocket.getAbsolutePath(), "-l", logs.getAbsolutePath(), "-d", inst.getPublicDirectory().getAbsolutePath(), "-c", moonrakerCfg.getAbsolutePath(), "-v");
         } catch (Exception e) {
             Log.e("moonraker_" + index, "Failed to start moonraker", e);
         }

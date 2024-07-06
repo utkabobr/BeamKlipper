@@ -45,6 +45,7 @@ Beam Klipper bundles:
 - [Mainsail](https://github.com/mainsail-crew/mainsail)
 - [Happy Hare](https://github.com/moggieuk/Happy-Hare)
 - [Klipper TMC Autotune](https://github.com/andrewmcgr/klipper_tmc_autotune)
+- [Moonraker-timelapse](https://github.com/mainsail-crew/moonraker-timelapse)
 
 # Beam extensions
 
