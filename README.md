@@ -10,7 +10,7 @@ K3D Chat for discussion & support (Russian language only): https://t.me/K_3_D
 
 # Quick start
 
-1. Install APK from Releases tab
+1. Install APK from [Releases tab](https://github.com/utkabobr/BeamKlipper/releases/latest)
 2. Allow all the permissions required
 3. Add printer instance (Click generic-***.cfg if your printer is not available)
 4. Click start
@@ -20,7 +20,7 @@ K3D Chat for discussion & support (Russian language only): https://t.me/K_3_D
 
 # Can I use device as regular after I install Beam Klipper to it?
 
-**Yes!** You definetly can!
+**Yes!** You definitely can!
 
 Beam Klipper does not do **anything** to your Android system, it runs in user-space as a regular Android app
 

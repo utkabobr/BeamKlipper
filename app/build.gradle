@@ -27,7 +27,7 @@ android {
         python {
             version = "3.10"
             pip {
-                options("--extra-index-url", "https://ytkab0bp.ru/beam/pypi")
+                options("--extra-index-url", "https://beam3d.ru/pypi")
 
                 install "cffi==1.15.1"
                 install "pyserial==3.4"
