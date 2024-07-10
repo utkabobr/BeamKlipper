@@ -49,6 +49,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -105,6 +106,8 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout badgesLayout;
     private RefBadgeView[] refBadges = new RefBadgeView[3];
 
+    private boolean isTV;
+
     @SuppressLint({"BatteryLife", "InlinedApi"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +118,7 @@ public class MainActivity extends AppCompatActivity {
         if (uiModeManager.getCurrentModeType() == Configuration.UI_MODE_TYPE_TELEVISION || getPackageManager().hasSystemFeature(PackageManager.FEATURE_TELEVISION) ||
                 getPackageManager().hasSystemFeature(PackageManager.FEATURE_LEANBACK) || !getPackageManager().hasSystemFeature("android.hardware.touchscreen") ||
                 !getPackageManager().hasSystemFeature("android.hardware.telephony")) {
+            isTV = true;
             PermissionsChecker.setIgnoreNotificationsChannel(true);
         }
 
@@ -360,6 +364,7 @@ public class MainActivity extends AppCompatActivity {
         newOrEditTitle.setPadding(ViewUtils.dp(12), 0, ViewUtils.dp(12), 0);
         newOrEditTitle.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
         newOrEditTitle.setOnClickListener(v -> animateNewOrEditLayout(false));
+        newOrEditTitle.setFocusable(false);
         newOrEditLayout.addView(newOrEditTitle);
 
         nameRow = new EditTextRowView(this);
@@ -385,6 +390,7 @@ public class MainActivity extends AppCompatActivity {
             for (File f : config.listFiles()) {
                 filesList.add(f.getName());
             }
+            Collections.sort(filesList);
             new MaterialAlertDialogBuilder(v.getContext())
                     .setTitle(R.string.instance_config)
                     .setItems(filesList.toArray(new String[0]), (dialog, which) -> configRow.bind(R.string.instance_config, filesList.get(which)))
@@ -571,6 +577,13 @@ public class MainActivity extends AppCompatActivity {
         noPermsLayout.setVisibility(PermissionsChecker.needBlockStart() ? View.VISIBLE : View.GONE);
         homeView.setVisibility(PermissionsChecker.needBlockStart() ? View.GONE : View.VISIBLE);
 
+        if (isTV) {
+            preferencesView.setFocusable(false);
+            preferencesView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            badgesLayout.setFocusable(false);
+            badgesLayout.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+        }
+
         fl.setBackgroundColor(ViewUtils.resolveColor(this, android.R.attr.windowBackground));
         setContentView(fl);
 
@@ -600,7 +613,19 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (newOrEditLayout.findFocus() != null && keyCode != KeyEvent.KEYCODE_BACK) {
+            return newOrEditLayout.onKeyUp(keyCode, event);
+        }
+        return super.onKeyUp(keyCode, event);
+    }
+
+    @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (newOrEditLayout.findFocus() != null && keyCode != KeyEvent.KEYCODE_BACK) {
+            return newOrEditLayout.onKeyDown(keyCode, event);
+        }
+
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             boolean focusInBadges = homeView.getTargetProgress() == 1;
             boolean focusInList = homeView.getTargetProgress() == 0;
@@ -681,6 +706,24 @@ public class MainActivity extends AppCompatActivity {
         listCardView.setAlpha(1f + negProgress);
 
         preferencesView.setProgress(-negProgress);
+
+        if (isTV) {
+            if (progress >= 0 && preferencesView.isFocusable()) {
+                preferencesView.setFocusable(false);
+                preferencesView.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            } else if (progress < 0 && !preferencesView.isFocusable()) {
+                preferencesView.setFocusable(true);
+                preferencesView.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            }
+
+            if (progress <= 0 && badgesLayout.isFocusable()) {
+                badgesLayout.setFocusable(false);
+                badgesLayout.setDescendantFocusability(ViewGroup.FOCUS_BLOCK_DESCENDANTS);
+            } else if (progress > 0 && !badgesLayout.isFocusable()) {
+                badgesLayout.setFocusable(true);
+                badgesLayout.setDescendantFocusability(ViewGroup.FOCUS_AFTER_DESCENDANTS);
+            }
+        }
     }
 
     @EventHandler(runOnMainThread = true)
@@ -752,9 +795,11 @@ public class MainActivity extends AppCompatActivity {
                     if (visible) {
                         listView.setVisibility(View.GONE);
                         resizeFrame.removeForceNotMeasure(listView);
+                        nameRow.requestFocus();
                     } else {
                         newOrEditLayout.setVisibility(View.GONE);
                         resizeFrame.removeForceNotMeasure(newOrEditLayout);
+                        listView.getChildAt(2 + (KlipperInstance.isWebServerRunning() ? 1 : 0)).requestFocus();
                     }
                     newOrEditAnimation = null;
                 });
