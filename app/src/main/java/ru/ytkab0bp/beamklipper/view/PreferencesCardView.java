@@ -239,6 +239,10 @@ public class PreferencesCardView extends FrameLayout {
         setFitsSystemWindows(true);
     }
 
+    public RecyclerView getListView() {
+        return listView;
+    }
+
     private void updateRows() {
         itemsCount = 0;
         generalHeaderRow = itemsCount++;

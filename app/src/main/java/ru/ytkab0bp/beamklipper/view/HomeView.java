@@ -84,7 +84,16 @@ public class HomeView extends FrameLayout {
     }
 
     public void animateTo(float to) {
-        if (progress == to) return;
+        animateTo(to, null);
+    }
+
+    public void animateTo(float to, Runnable callback) {
+        if (progress == to) {
+            if (callback != null) {
+                callback.run();
+            }
+            return;
+        }
         animation = new SpringAnimation(new FloatValueHolder(progress))
                 .setMinimumVisibleChange(1 / 256f)
                 .setSpring(new SpringForce(to)
@@ -94,7 +103,12 @@ public class HomeView extends FrameLayout {
                     progress = value;
                     invalidateProgress();
                 })
-                .addEndListener((animation1, canceled, value, velocity) -> animation = null);
+                .addEndListener((animation1, canceled, value, velocity) -> {
+                    animation = null;
+                    if (callback != null) {
+                        callback.run();
+                    }
+                });
         animation.start();
     }
 
@@ -102,6 +116,10 @@ public class HomeView extends FrameLayout {
         if (progressListener != null) {
             progressListener.accept(progress);
         }
+    }
+
+    public float getTargetProgress() {
+        return animation == null ? progress : animation.getSpring().getFinalPosition();
     }
 
     public float getProgress() {

@@ -21,6 +21,7 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.EditText;
@@ -153,18 +154,25 @@ public class MainActivity extends AppCompatActivity {
         refBadges[0] = new RefBadgeView(this);
         refBadges[0].setIcon(R.drawable.ic_boosty, R.attr.boostyColor, R.string.badge_boosty);
         refBadges[0].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://boosty.to/ytkab0bp"))));
+        refBadges[0].setId(R.id.badge_boosty);
+        refBadges[0].setNextFocusDownId(R.id.badge_telegram);
         badgesLayout.addView(refBadges[0]);
 
         refBadges[1] = new RefBadgeView(this);
         refBadges[1].setIcon(R.drawable.ic_telegram, R.attr.telegramColor, R.string.badge_telegram);
         refBadges[1].getIcon().setTranslationX(-ViewUtils.dp(1));
         refBadges[1].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/ytkab0bp_channel"))));
+        refBadges[1].setId(R.id.badge_telegram);
+        refBadges[1].setNextFocusUpId(R.id.badge_boosty);
+        refBadges[1].setNextFocusDownId(R.id.badge_k3d);
         badgesLayout.addView(refBadges[1]);
 
         refBadges[2] = new RefBadgeView(this);
         refBadges[2].setIcon(R.drawable.k3d_logo_new_14, 0, R.string.badge_k3d);
         refBadges[2].getIcon().setPadding(ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8));
         refBadges[2].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/K_3_D"))));
+        refBadges[2].setId(R.id.badge_k3d);
+        refBadges[2].setNextFocusUpId(R.id.badge_telegram);
         badgesLayout.addView(refBadges[2]);
 
         listCardView = new MaterialCardView(this);
@@ -589,6 +597,61 @@ public class MainActivity extends AppCompatActivity {
         super.onDestroy();
 
         KlipperApp.EVENT_BUS.unregisterListener(this);
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            boolean focusInBadges = homeView.getTargetProgress() == 1;
+            boolean focusInList = homeView.getTargetProgress() == 0;
+            boolean focusInSettings = homeView.getTargetProgress() == -1;
+
+            if (keyCode == KeyEvent.KEYCODE_DPAD_DOWN) {
+                if (focusInSettings) return super.onKeyDown(keyCode, event);
+
+                boolean isLast;
+                if (focusInList) {
+                    View focus = listView.findFocus();
+                    isLast = focus != null && listView.getChildViewHolder(focus).getAdapterPosition() == listView.getAdapter().getItemCount() - 1;
+                } else {
+                    isLast = badgesLayout.findFocus() == refBadges[refBadges.length - 1];
+                }
+
+                if (!isLast) return super.onKeyDown(keyCode, event);
+
+                homeView.animateTo(focusInList ? -1 : 0, () -> {
+                    if (focusInList) {
+                        preferencesView.getListView().getChildAt(1).requestFocus();
+                    } else {
+                        listView.getChildAt(2 + (KlipperInstance.isWebServerRunning() ? 1 : 0)).requestFocus();
+                    }
+                });
+                return true;
+            } else if (keyCode == KeyEvent.KEYCODE_DPAD_UP) {
+                if (focusInBadges) return super.onKeyDown(keyCode, event);
+
+                boolean isFirst;
+                if (focusInList) {
+                    View focus = listView.findFocus();
+                    isFirst = focus != null && listView.getChildViewHolder(focus).getAdapterPosition() == 2 + (KlipperInstance.isWebServerRunning() ? 1 : 0);
+                } else {
+                    View focus = preferencesView.getListView().findFocus();
+                    isFirst = focus != null && preferencesView.getListView().getChildViewHolder(focus).getAdapterPosition() == 1;
+                }
+
+                if (!isFirst) return super.onKeyDown(keyCode, event);
+
+                homeView.animateTo(focusInList ? 1 : 0, () -> {
+                    if (focusInList) {
+                        refBadges[refBadges.length - 1].requestFocus();
+                    } else {
+                        listView.getChildAt(2 + (KlipperInstance.isWebServerRunning() ? 1 : 0)).requestFocus();
+                    }
+                });
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     private void invalidateHomeProgress(float progress) {

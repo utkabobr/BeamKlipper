@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <id name="spring"/>
+    <id name="badge_boosty"/>
+    <id name="badge_telegram"/>
+    <id name="badge_k3d"/>
 </resources>
