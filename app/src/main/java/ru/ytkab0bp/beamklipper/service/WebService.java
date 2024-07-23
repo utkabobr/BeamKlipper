@@ -248,7 +248,7 @@ public class WebService extends Service {
             Matcher m = API_PATTERN.matcher(session.getUri());
             if (m.find()) {
                 try {
-                    HttpURLConnection con = (HttpURLConnection) new URL("http://127.0.0.1:7125/" + session.getUri().substring(1)).openConnection();
+                    HttpURLConnection con = (HttpURLConnection) new URL("http://127.0.0.1:7125/" + session.getUri().substring(1) + "?" + session.getQueryParameterString()).openConnection();
                     con.setRequestMethod(session.getMethod().name());
                     if (session.getMethod() == Method.POST || session.getMethod() == Method.PUT || session.getMethod() == Method.PATCH) {
                         for (Map.Entry<String, String> en : session.getHeaders().entrySet()) {
@@ -290,7 +290,7 @@ public class WebService extends Service {
         protected WebSocket openWebSocket(IHTTPSession handshake) {
             try {
                 AtomicReference<WebSocket> localRef = new AtomicReference<>();
-                WebSocketClient remote = new WebSocketClient(new URI("ws://127.0.0.1:7125/websocket")) {
+                WebSocketClient remote = new WebSocketClient(new URI("ws://127.0.0.1:7125/websocket?" + handshake.getQueryParameterString())) {
                     @Override
                     public void onOpen(ServerHandshake handshakedata) {}
 
