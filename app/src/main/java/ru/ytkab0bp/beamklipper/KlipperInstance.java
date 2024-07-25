@@ -16,10 +16,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
 import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
 import ru.ytkab0bp.beamklipper.service.BasePythonService;
+import ru.ytkab0bp.beamklipper.service.BaseRemoteControlService;
 import ru.ytkab0bp.beamklipper.service.CameraService;
 import ru.ytkab0bp.beamklipper.service.WebService;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
@@ -37,12 +39,18 @@ public class KlipperInstance {
     private static Map<KlipperInstance, Integer> slots = new HashMap<>();
     private static ServiceConnection webServerConnection;
     private static ServiceConnection cameraServerConnection;
+
     private Intent klippyIntent;
     private ServiceConnection klippyConnection;
     private boolean klippyConnected;
+
     private Intent moonrakerIntent;
     private ServiceConnection moonrakerConnection;
     private boolean moonrakerConnected;
+
+    private Intent remoteIntent;
+    private ServiceConnection remoteConnection;
+
     private int slot;
 
     private static List<KlipperInstance> instances = Collections.emptyList();
@@ -74,6 +82,8 @@ public class KlipperInstance {
                 inst.moonrakerConnection = was.moonrakerConnection;
                 inst.moonrakerConnected = was.moonrakerConnected;
                 inst.moonrakerIntent = was.moonrakerIntent;
+                inst.remoteIntent = was.remoteIntent;
+                inst.remoteConnection = was.remoteConnection;
                 inst.slot = was.slot;
                 slots.remove(was);
                 slots.put(inst, inst.slot);
@@ -113,6 +123,10 @@ public class KlipperInstance {
         return slots.size() < SLOTS_COUNT;
     }
 
+    public static Set<KlipperInstance> getRunningSlots() {
+        return slots.keySet();
+    }
+
     public void start() {
         if (state != State.IDLE) return;
         notifyStateChanged(State.STARTING);
@@ -150,7 +164,7 @@ public class KlipperInstance {
         }
         slots.put(this, slot);
         try {
-            klippyIntent = new Intent(KlipperApp.INSTANCE, Class.forName("ru.ytkab0bp.beamklipper.service.KlippyService_" + slot));
+            klippyIntent = new Intent(KlipperApp.INSTANCE, Class.forName("ru.ytkab0bp.beamklipper.service.impl.KlippyService_" + slot));
             klippyIntent.putExtra(BasePythonService.KEY_INSTANCE, id);
             KlipperApp.INSTANCE.bindService(klippyIntent, klippyConnection = new ServiceConnection() {
                 @Override
@@ -169,12 +183,13 @@ public class KlipperInstance {
             throw new RuntimeException(e);
         }
         try {
-            moonrakerIntent = new Intent(KlipperApp.INSTANCE, Class.forName("ru.ytkab0bp.beamklipper.service.MoonrakerService_" + slot));
+            moonrakerIntent = new Intent(KlipperApp.INSTANCE, Class.forName("ru.ytkab0bp.beamklipper.service.impl.MoonrakerService_" + slot));
             moonrakerIntent.putExtra(BasePythonService.KEY_INSTANCE, id);
             KlipperApp.INSTANCE.bindService(moonrakerIntent, moonrakerConnection = new ServiceConnection() {
                 @Override
                 public void onServiceConnected(ComponentName name, IBinder service) {
                     moonrakerConnected = true;
+                    startRemote();
 
                     if (klippyConnected) {
                         notifyStateChanged(State.RUNNING);
@@ -186,6 +201,33 @@ public class KlipperInstance {
             }, Context.BIND_AUTO_CREATE);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    public void startRemote() {
+        if (Prefs.getRemoteControl() != BaseRemoteControlService.RemoteControlService.NONE) {
+            try {
+                remoteIntent = new Intent(KlipperApp.INSTANCE, Class.forName("ru.ytkab0bp.beamklipper.service.impl.RemoteControlService_" + slot));
+                remoteIntent.putExtra(BasePythonService.KEY_INSTANCE, id);
+                KlipperApp.INSTANCE.bindService(remoteIntent, remoteConnection = new ServiceConnection() {
+                    @Override
+                    public void onServiceConnected(ComponentName name, IBinder service) {}
+
+                    @Override
+                    public void onServiceDisconnected(ComponentName name) {}
+                }, Context.BIND_AUTO_CREATE);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    public void stopRemote() {
+        if (remoteConnection != null) {
+            KlipperApp.INSTANCE.unbindService(remoteConnection);
+            KlipperApp.INSTANCE.stopService(remoteIntent);
+            remoteConnection = null;
+            remoteIntent = null;
         }
     }
 
@@ -237,6 +279,7 @@ public class KlipperInstance {
             KlipperApp.INSTANCE.stopService(moonrakerIntent);
             onMoonrakerUnbound();
         }
+        stopRemote();
     }
 
     private void notifyStateChanged(State state) {

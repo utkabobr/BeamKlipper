@@ -8,8 +8,10 @@ import android.os.Build;
 import android.preference.PreferenceManager;
 
 import ru.ytkab0bp.beamklipper.KlipperApp;
+import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.events.WebFrontendChangedEvent;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
+import ru.ytkab0bp.beamklipper.service.BaseRemoteControlService;
 
 public class Prefs {
     public final static int USB_DEVICE_NAMING_BY_PATH = 0, USB_DEVICE_NAMING_BY_VID_PID = 1;
@@ -82,5 +84,22 @@ public class Prefs {
 
     public static void setFocusDistance(float f) {
         mPrefs.edit().putFloat("focus", f).apply();
+    }
+
+    public static BaseRemoteControlService.RemoteControlService getRemoteControl() {
+        return BaseRemoteControlService.RemoteControlService.valueOf(mPrefs.getString("remote_control", BaseRemoteControlService.RemoteControlService.NONE.name()));
+    }
+
+    public static void setRemoteControl(BaseRemoteControlService.RemoteControlService service) {
+        if (service == getRemoteControl()) return;
+
+        mPrefs.edit().putString("remote_control", service.name()).apply();
+
+        for (KlipperInstance k : KlipperInstance.getRunningSlots()) {
+            k.stopRemote();
+            if (service != BaseRemoteControlService.RemoteControlService.NONE) {
+                k.startRemote();
+            }
+        }
     }
 }

@@ -6,6 +6,8 @@
     <string name="klippy_description">Klippy работает в фоне…</string>
     <string name="moonraker_title">Moonraker (%s)</string>
     <string name="moonraker_description">Moonraker работает в фоне…</string>
+    <string name="remote_service_title">Сервис удалённого доступа (%s)</string>
+    <string name="remote_service_description">Сервис удалённого доступа работает в фоне…</string>
     <string name="web_title">Веб сервер</string>
     <string name="web_description">Веб сервер работает в фоне…</string>
     <string name="camera_title">Сервер камеры</string>
@@ -50,4 +52,8 @@
     <string name="upload_logs">Загрузить логи на сервер CODeRUS</string>
     <string name="upload_failed">Не удалось загрузить!</string>
     <string name="upload_success">Загрузка завершена</string>
+    <string name="remote_service">Удалённое управление</string>
+    <string name="remote_service_none">Отключено</string>
+    <string name="remote_service_telegram_bot">Telegram Бот</string>
+    <string name="remote_config_notice">Пожалуйста, проверьте файл конфигурации для %s!</string>
 </resources>

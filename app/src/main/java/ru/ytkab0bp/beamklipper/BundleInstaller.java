@@ -31,6 +31,7 @@ public class BundleInstaller {
                 JSONObject index = new JSONObject(readString(assets, "index.json"));
                 unpack(assets, index, root, "klipper");
                 unpack(assets, index, root, "moonraker");
+                unpack(assets, index, root, "moonraker_telegram_bot");
 
                 prefs.edit().putString("version", ver).apply();
             }

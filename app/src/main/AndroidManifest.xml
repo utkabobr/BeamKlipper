@@ -69,14 +69,18 @@
 
         <service android:name=".service.CameraService" android:exported="false" android:process=":camera" android:foregroundServiceType="camera"/>
         <service android:name=".service.WebService" android:exported="false" android:foregroundServiceType="dataSync"/>
-        <service android:name=".service.KlippyService_0" android:exported="false" android:process=":klippy_0" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.MoonrakerService_0" android:exported="false" android:process=":moonraker_0" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.KlippyService_1" android:exported="false" android:process=":klippy_1" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.MoonrakerService_1" android:exported="false" android:process=":moonraker_1" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.KlippyService_2" android:exported="false" android:process=":klippy_2" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.MoonrakerService_2" android:exported="false" android:process=":moonraker_2" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.KlippyService_3" android:exported="false" android:process=":klippy_3" android:foregroundServiceType="connectedDevice"/>
-        <service android:name=".service.MoonrakerService_3" android:exported="false" android:process=":moonraker_3" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.KlippyService_0" android:exported="false" android:process=":klippy_0" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.MoonrakerService_0" android:exported="false" android:process=":moonraker_0" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.RemoteControlService_0" android:exported="false" android:process=":remote_0" android:foregroundServiceType="connectedDevice|dataSync"/>
+        <service android:name=".service.impl.KlippyService_1" android:exported="false" android:process=":klippy_1" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.MoonrakerService_1" android:exported="false" android:process=":moonraker_1" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.RemoteControlService_1" android:exported="false" android:process=":remote_1" android:foregroundServiceType="connectedDevice|dataSync"/>
+        <service android:name=".service.impl.KlippyService_2" android:exported="false" android:process=":klippy_2" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.MoonrakerService_2" android:exported="false" android:process=":moonraker_2" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.RemoteControlService_2" android:exported="false" android:process=":remote_2" android:foregroundServiceType="connectedDevice|dataSync"/>
+        <service android:name=".service.impl.KlippyService_3" android:exported="false" android:process=":klippy_3" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.MoonrakerService_3" android:exported="false" android:process=":moonraker_3" android:foregroundServiceType="connectedDevice"/>
+        <service android:name=".service.impl.RemoteControlService_3" android:exported="false" android:process=":remote_3" android:foregroundServiceType="connectedDevice|dataSync"/>
 
         <provider
             android:name=".provider.InstanceFilesProvider"

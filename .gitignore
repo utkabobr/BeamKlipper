@@ -26,3 +26,5 @@ local.properties
 /app/src/main/assets/moonraker/moonraker/
 app/release/
 app/src/main/assets/moonraker/timelapse.cfg
+
+app/src/main/assets/moonraker_telegram_bot/bot/

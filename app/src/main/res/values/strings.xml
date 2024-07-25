@@ -7,6 +7,8 @@
     <string name="klippy_description">Klippy is running in background…</string>
     <string name="moonraker_title">Moonraker (%s)</string>
     <string name="moonraker_description">Moonraker is running in background…</string>
+    <string name="remote_service_title">7vice (%s)</string>
+    <string name="remote_service_description">Remote service is running in background…</string>
     <string name="web_title">Web server</string>
     <string name="web_description">Web server is running in background…</string>
     <string name="camera_title">Camera server</string>
@@ -55,4 +57,8 @@
     <string name="upload_logs">Upload logs to CODeRUS\' server</string>
     <string name="upload_failed">Upload failed!</string>
     <string name="upload_success">Upload finished</string>
+    <string name="remote_service">Remote control</string>
+    <string name="remote_service_none">None</string>
+    <string name="remote_service_telegram_bot">Telegram Bot</string>
+    <string name="remote_config_notice">Please check configuration file for %s!</string>
 </resources>

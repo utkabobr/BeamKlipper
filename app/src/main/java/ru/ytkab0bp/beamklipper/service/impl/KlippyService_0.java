@@ -1,4 +1,6 @@
-package ru.ytkab0bp.beamklipper.service;
+package ru.ytkab0bp.beamklipper.service.impl;
+
+import ru.ytkab0bp.beamklipper.service.BaseKlippyService;
 
 public class KlippyService_0 extends BaseKlippyService {
     public KlippyService_0() {

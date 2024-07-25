@@ -40,6 +40,7 @@ import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
 import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
+import ru.ytkab0bp.beamklipper.service.BaseRemoteControlService;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.beamklipper.view.preferences.PreferenceHeaderView;
@@ -63,6 +64,7 @@ public class PreferencesCardView extends FrameLayout {
     private int itemsCount = 0;
     private int generalHeaderRow;
     private int frontendRow;
+    private int remoteServiceRow;
     private int cameraHeaderRow;
     private int cameraEnabledRow;
     private int usbHeaderRow;
@@ -208,6 +210,32 @@ public class PreferencesCardView extends FrameLayout {
                                         Prefs.setMainsailEnabled(which == 1);
                                         notifyItemChanged(holder.getAdapterPosition());
                                     }).show());
+                        } else if (position == remoteServiceRow) {
+                            String svcName;
+                            switch (Prefs.getRemoteControl()) {
+                                default:
+                                    svcName = KlipperApp.INSTANCE.getString(R.string.remote_service_none);
+                                    break;
+                                case TELEGRAM_BOT:
+                                    svcName = KlipperApp.INSTANCE.getString(R.string.remote_service_telegram_bot);
+                                    break;
+                            }
+
+                            val.bind(KlipperApp.INSTANCE.getString(R.string.remote_service), svcName);
+                            val.setOnClickListener(v -> new MaterialAlertDialogBuilder(v.getContext())
+                                    .setTitle(R.string.remote_service)
+                                    .setItems(new CharSequence[] {
+                                            KlipperApp.INSTANCE.getString(R.string.remote_service_none),
+                                            KlipperApp.INSTANCE.getString(R.string.remote_service_telegram_bot)
+                                    }, (dialog, which) -> {
+                                        Prefs.setRemoteControl(BaseRemoteControlService.RemoteControlService.values()[which]);
+                                        new MaterialAlertDialogBuilder(getContext())
+                                                .setTitle(R.string.remote_service)
+                                                .setMessage(R.string.remote_config_notice)
+                                                .setPositiveButton(android.R.string.ok, null)
+                                                .show();
+                                        notifyItemChanged(holder.getAdapterPosition());
+                                    }).show());
                         }
                         break;
                 }
@@ -226,7 +254,7 @@ public class PreferencesCardView extends FrameLayout {
                     return VIEW_TYPE_HEADER;
                 } else if (position == listUsbRow) {
                     return VIEW_TYPE_PREFERENCE;
-                } else if (position == usbNamingRow || position == frontendRow) {
+                } else if (position == usbNamingRow || position == frontendRow || position == remoteServiceRow) {
                     return VIEW_TYPE_PREF_VALUE;
                 }
                 return 0;
@@ -247,6 +275,7 @@ public class PreferencesCardView extends FrameLayout {
         itemsCount = 0;
         generalHeaderRow = itemsCount++;
         frontendRow = itemsCount++;
+        remoteServiceRow = itemsCount++;
         cameraHeaderRow = itemsCount++;
         cameraEnabledRow = itemsCount++;
         usbHeaderRow = itemsCount++;

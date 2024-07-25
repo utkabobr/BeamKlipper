@@ -34,7 +34,7 @@ android {
                 install "greenlet==3.0.1"
                 install "python-can==3.3.4"
                 install "markupsafe==2.1.5"
-                install "tornado==6.4.0"
+                install "tornado==6.1.0"
                 install "pyserial-asyncio==0.6"
                 install "pillow==9.2.0"
                 install "streaming-form-data==1.15.0"
@@ -51,6 +51,16 @@ android {
                 install "python-periphery==2.4.1"
                 install "pynacl==1.5.0"
                 install "numpy==1.26.2"
+                install "emoji==2.2.0"
+                install "PySocks==1.7.1"
+                install "python-telegram-bot==13.15"
+                install "rel==0.4.8"
+                install "requests==2.28.2"
+                install "tzlocal==2.1"
+                install "websocket-client==1.5.1"
+                install "ujson==5.10.0"
+                install "wsaccel==0.6.6"
+                install "apscheduler==3.6.3"
             }
             pyc {
                 src false
@@ -103,7 +113,7 @@ dependencies {
     implementation 'org.tukaani:xz:1.9'
     implementation 'org.kamranzafar:jtar:2.3'
     implementation 'com.squareup.okhttp3:okhttp:3.12.6'
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2.LTS'
+    implementation 'com.arthenica:ffmpeg-kit-video:6.0-2.LTS'
 
     implementation project(":eventbus")
     implementation project(":eventbus_api")
@@ -239,11 +249,12 @@ tasks.register('bundleKlipper') {
     doFirst {
         var assets = file('src/main/assets')
         var versionFile = new File(assets, 'bundle_version')
-        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare')) + '_klipper_tmc_autotune-' + getGitCommitHash(file('src/main/klipper_tmc_autotune')) + '_moonraker_timelapse-' + getGitCommitHash(file('src/main/moonraker_timelapse')) + '_beamext-' + file('src/main/assets/klipper/beam_ext/ext_version').text
+        var version = 'klipper-' + getGitCommitHash(file('src/main/klipper')) + '_moonraker-' + getGitCommitHash(file('src/main/moonraker')) + '_happyhare-' + getGitCommitHash(file('src/main/happyhare')) + '_klipper_tmc_autotune-' + getGitCommitHash(file('src/main/klipper_tmc_autotune')) + '_moonraker_timelapse-' + getGitCommitHash(file('src/main/moonraker_timelapse')) + '_moonraker_telegram_bot-' + getGitCommitHash(file('src/main/moonraker_telegram_bot')) + '_beamext-' + file('src/main/assets/klipper/beam_ext/ext_version').text
         if (!versionFile.exists() || versionFile.text != version) {
             var files = new ArrayList<File>()
             collectFiles(file('src/main/assets/klipper/klippy'), files)
             collectFiles(file('src/main/assets/moonraker/moonraker'), files)
+            collectFiles(file('src/main/assets/moonraker_telegram_bot/bot'), files)
             files.each {
                 it.delete()
             }
@@ -360,6 +371,21 @@ tasks.register('bundleKlipper') {
             Files.copy(file('src/main/moonraker_timelapse/klipper_macro/timelapse.cfg').toPath(), new File(assets, 'moonraker/timelapse.cfg').toPath(), StandardCopyOption.REPLACE_EXISTING)
 
             index.put('moonraker', arr)
+
+            arr = new JSONArray()
+            arr.put('bootstrap.py')
+            var telegram_bot = file('src/main/moonraker_telegram_bot/bot')
+            files.clear()
+            collectFiles(telegram_bot, files)
+            files.each {
+                var sub = it.getAbsolutePath().substring(telegram_bot.getAbsolutePath().length() + 1).replace('\\', '/')
+                arr.put('bot/' + sub)
+                var f = new File(assets, 'moonraker_telegram_bot/bot/' + sub)
+                f.getParentFile().mkdirs()
+                Files.copy(it.toPath(), f.toPath(), StandardCopyOption.REPLACE_EXISTING)
+            }
+
+            index.put('moonraker_telegram_bot', arr)
 
             var indexFile = file('src/main/assets/index.json')
             if (!indexFile.exists()) indexFile.createNewFile()
