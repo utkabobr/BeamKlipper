@@ -179,7 +179,7 @@ public class InstanceFilesProvider extends DocumentsProvider {
         row.add(DocumentsContract.Document.COLUMN_FLAGS, flags);
 
         // Add a custom icon
-        row.add(DocumentsContract.Document.COLUMN_ICON, android.R.mipmap.sym_def_app_icon);
+        row.add(DocumentsContract.Document.COLUMN_ICON, R.drawable.icon_static);
     }
 
     @Override
@@ -198,7 +198,7 @@ public class InstanceFilesProvider extends DocumentsProvider {
 
             row.add(DocumentsContract.Root.COLUMN_MIME_TYPES, getChildMimeTypes());
             row.add(DocumentsContract.Root.COLUMN_AVAILABLE_BYTES, inst.getPublicDirectory().getFreeSpace());
-            row.add(DocumentsContract.Root.COLUMN_ICON, android.R.mipmap.sym_def_app_icon);
+            row.add(DocumentsContract.Root.COLUMN_ICON, R.drawable.icon_static);
         }
 
         return result;

@@ -41,7 +41,7 @@ public class BaseMoonrakerService extends BasePythonService {
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
         not.setContentTitle(getString(R.string.moonraker_title, getInstance().name))
                 .setContentText(getString(R.string.moonraker_description))
-                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(BASE_ID + index, not.build());
         startForeground(BASE_ID + index, not.build());

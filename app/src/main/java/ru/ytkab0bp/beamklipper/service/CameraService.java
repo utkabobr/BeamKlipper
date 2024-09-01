@@ -123,7 +123,7 @@ public class CameraService extends Service {
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
         not.setContentTitle(getString(R.string.camera_title))
                 .setContentText(getString(R.string.camera_description))
-                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(ID, not.build());
         startForeground(ID, not.build());

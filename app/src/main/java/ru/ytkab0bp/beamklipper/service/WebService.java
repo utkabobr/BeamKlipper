@@ -92,7 +92,7 @@ public class WebService extends Service {
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
         not.setContentTitle(getString(R.string.web_title))
                 .setContentText(getString(R.string.web_description))
-                .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(ID, not.build());
         startForeground(ID, not.build());
