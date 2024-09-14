@@ -19,8 +19,8 @@ android {
         applicationId "ru.ytkab0bp.beamklipper"
         minSdk 21
         targetSdk 34
-        versionCode 3
-        versionName "1.0_klipper-0.12.0"
+        versionCode 4
+        versionName "1.0.1_klipper-0.12.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -93,17 +93,18 @@ android {
 
 dependencies {
     implementation 'com.github.mik3y:usb-serial-for-android:3.7.2'
-    implementation 'androidx.annotation:annotation:1.8.0'
+    implementation 'androidx.annotation:annotation:1.8.2'
     implementation 'androidx.core:core:1.13.1'
-    implementation 'androidx.activity:activity:1.9.0'
+    implementation 'androidx.activity:activity:1.9.2'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.goterl:lazysodium-android:5.1.0@aar'
-    implementation 'org.java-websocket:Java-WebSocket:1.5.6'
+    implementation 'org.java-websocket:Java-WebSocket:1.5.7'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'org.tukaani:xz:1.9'
     implementation 'org.kamranzafar:jtar:2.3'
+    //noinspection GradleDependency
     implementation 'com.squareup.okhttp3:okhttp:3.12.6'
-    implementation 'com.arthenica:ffmpeg-kit-full:6.0-2.LTS'
+    implementation 'com.arthenica:ffmpeg-kit-video:6.0-2.LTS'
 
     implementation project(":eventbus")
     implementation project(":eventbus_api")

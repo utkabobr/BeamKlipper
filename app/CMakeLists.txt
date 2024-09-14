@@ -38,6 +38,7 @@ add_library(klippy_chelper
         src/main/klipper/klippy/chelper/kin_deltesian.c
         src/main/klipper/klippy/chelper/kin_extruder.c
         src/main/klipper/klippy/chelper/kin_polar.c
+        src/main/klipper/klippy/chelper/kin_idex.c
         src/main/klipper/klippy/chelper/kin_rotary_delta.c
         src/main/klipper/klippy/chelper/kin_shaper.c
         src/main/klipper/klippy/chelper/kin_winch.c

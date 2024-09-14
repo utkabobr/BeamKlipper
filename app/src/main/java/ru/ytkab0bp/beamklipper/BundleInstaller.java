@@ -59,6 +59,12 @@ public class BundleInstaller {
             fos = new FileOutputStream(new File(root, "klipper/klippy/extras/resonance_tester.py"));
             fos.write(str.getBytes(StandardCharsets.UTF_8));
             fos.close();
+
+            str = readString(assets, "klipper/klippy/mcu.py");
+            str = str.replace("${TTY_PATH}", "'" + new File(KlipperApp.INSTANCE.getFilesDir(), "serial").getAbsolutePath() + "'");
+            fos = new FileOutputStream(new File(root, "klipper/klippy/mcu.py"));
+            fos.write(str.getBytes(StandardCharsets.UTF_8));
+            fos.close();
         } catch (IOException | JSONException | PackageManager.NameNotFoundException e) {
             throw new RuntimeException(e);
         }

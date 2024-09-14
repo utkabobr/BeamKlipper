@@ -10,13 +10,14 @@ K3D Chat for discussion & support (Russian language only): https://t.me/K_3_D
 
 # Quick start
 
-1. Install APK from [Releases tab](https://github.com/utkabobr/BeamKlipper/releases/latest)
-2. Allow all the permissions required
-3. Add printer instance (Click generic-***.cfg if your printer is not available)
-4. Click start
-5. Go to web server's url `http://IP:8888/`
-6. Configure serial port from "Devices" tab in web editor
-7. You're awesome!
+1. Download & install firmware.bin from [here](https://github.com/utkabobr/klipper/tree/prebuilt-v0.12.0) (or build your own from [this repo](https://github.com/utkabobr/klipper) to ensure versions compatibility)
+2. Install APK from [Releases tab](https://github.com/utkabobr/BeamKlipper/releases/latest)
+3. Allow all the permissions required
+4. Add printer instance (Click generic-***.cfg if your printer is not available)
+5. Click start
+6. Go to web server's url `http://IP:8888/`
+7. Configure serial port from "Devices" tab in web editor (1.0.1+ configures automatically if you use single printer setup)
+8. You're awesome!
 
 # Can I use device as regular after I install Beam Klipper to it?
 
