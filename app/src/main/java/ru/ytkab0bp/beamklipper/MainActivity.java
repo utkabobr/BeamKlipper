@@ -121,6 +121,9 @@ public class MainActivity extends AppCompatActivity {
             isTV = true;
             PermissionsChecker.setIgnoreNotificationsChannel(true);
         }
+        if (Build.MANUFACTURER.toLowerCase().contains("meizu") || Build.BRAND.toLowerCase().contains("meizu")) {
+            PermissionsChecker.setIgnoreNotificationsChannel(true);
+        }
 
         FrameLayout fl = new FrameLayout(this);
 

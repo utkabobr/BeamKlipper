@@ -58,8 +58,17 @@ public class BasePythonService extends Service {
 
         pythonHandler.post(()->{
             android.os.Process.setThreadPriority(-20);
-            Python.start(new AndroidPlatform(this));
-            py = Python.getInstance();
+            AndroidPlatform platform = new AndroidPlatform(this);
+            do {
+                // Hackfix old devices that fail to create paths
+                // Idk why it happens, lol
+                try {
+                    platform.getPath();
+                    Python.start(platform);
+                    py = Python.getInstance();
+                    break;
+                } catch (Exception ignored) {}
+            } while (true);
         });
     }
 
