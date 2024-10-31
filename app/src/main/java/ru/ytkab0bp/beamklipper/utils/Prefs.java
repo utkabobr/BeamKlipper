@@ -26,7 +26,7 @@ public class Prefs {
     }
 
     public static boolean isMainsailEnabled() {
-        return mPrefs.getBoolean("mainsail", false);
+        return mPrefs.getBoolean("mainsail", true);
     }
 
     public static int getCameraWidth() {
