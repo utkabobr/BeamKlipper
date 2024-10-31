@@ -53,7 +53,7 @@ public class BeamDB extends SQLiteOpenHelper {
             inst.id = cv.getAsString(COLUMN_ID);
             inst.name = cv.getAsString(COLUMN_NAME);
             inst.icon = InstanceIcon.byKey(cv.getAsString(COLUMN_ICON));
-            inst.autostart = cv.get(COLUMN_AUTOSTART) != null ? cv.getAsBoolean(COLUMN_AUTOSTART) : false;
+            inst.autostart = "1".equals(cv.get(COLUMN_AUTOSTART));
             instances.add(inst);
         }
         c.close();
