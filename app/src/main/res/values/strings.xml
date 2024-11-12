@@ -15,6 +15,8 @@
     <string name="notifications">Notifications</string>
     <string name="notifications_hide_channel">Hide notifications channel</string>
     <string name="notifications_hide_channel_info">You need to disable «%s» channel</string>
+    <string name="not_on_sdcard">App is not broken by installing on SD Card</string>
+    <string name="not_on_sdcard_info">App can\'t work on SD Card</string>
     <string name="next">Next</string>
     <string name="instances">Profiles</string>
     <string name="instance_starting">Starting…</string>

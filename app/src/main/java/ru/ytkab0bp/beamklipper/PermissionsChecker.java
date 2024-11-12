@@ -3,6 +3,7 @@ package ru.ytkab0bp.beamklipper;
 import android.app.ActivityManager;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Build;
 
@@ -32,7 +33,17 @@ public class PermissionsChecker {
         return Build.VERSION.SDK_INT < Build.VERSION_CODES.P || !((ActivityManager) KlipperApp.INSTANCE.getSystemService(Context.ACTIVITY_SERVICE)).isBackgroundRestricted();
     }
 
+    public static boolean isNotBrokenBySDCard() {
+        PackageManager pm = KlipperApp.INSTANCE.getPackageManager();
+        try {
+            ApplicationInfo info = pm.getApplicationInfo(KlipperApp.INSTANCE.getPackageName(), 0);
+            return (info.flags & ApplicationInfo.FLAG_EXTERNAL_STORAGE) == 0;
+        } catch (PackageManager.NameNotFoundException ignored) {}
+
+        return true;
+    }
+
     public static boolean needBlockStart() {
-        return !hasNotificationPerm() || !hasBatteryPerm() || !isNotificationsChannelHidden();
+        return !hasNotificationPerm() || !hasBatteryPerm() || !isNotificationsChannelHidden() || !isNotBrokenBySDCard();
     }
 }

@@ -101,6 +101,7 @@ public class MainActivity extends AppCompatActivity {
     private PermissionRowView batteryRow;
     private PermissionRowView notificationsRow;
     private PermissionRowView hideServicesChannelRow;
+    private PermissionRowView brokenBySDCardRow;
 
     private ImageView logoView;
     private TextView titleView;
@@ -570,6 +571,15 @@ public class MainActivity extends AppCompatActivity {
             });
             ll.addView(hideServicesChannelRow);
         }
+        if (!PermissionsChecker.isNotBrokenBySDCard()) {
+            brokenBySDCardRow = new PermissionRowView(this);
+            brokenBySDCardRow.bind(R.string.not_on_sdcard, PermissionsChecker.isNotBrokenBySDCard(), true);
+            brokenBySDCardRow.setOnClickListener(v -> {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:" + KlipperApp.INSTANCE.getPackageName())));
+                Toast.makeText(this, R.string.not_on_sdcard_info, Toast.LENGTH_SHORT).show();
+            });
+            ll.addView(brokenBySDCardRow);
+        }
 
         PermissionRowView row = new PermissionRowView(this);
         row.titleView.setGravity(Gravity.CENTER);
@@ -868,6 +878,9 @@ public class MainActivity extends AppCompatActivity {
         batteryRow.setChecked(PermissionsChecker.hasBatteryPerm());
         if (hideServicesChannelRow != null) {
             hideServicesChannelRow.setChecked(PermissionsChecker.isNotificationsChannelHidden());
+        }
+        if (brokenBySDCardRow != null) {
+            brokenBySDCardRow.setChecked(PermissionsChecker.isNotBrokenBySDCard());
         }
     }
 
