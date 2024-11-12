@@ -79,7 +79,7 @@ You can circumvent this by setting app as default launcher and allowing all the 
 
 # Android TV support?
 
-It *should* be supported, but it's not tested yet. There might be interface bugs
+Yup. Should be working just fine. But please note that some cheap TV boxes does not support setting Beam Klipper as launcher without disabling system one first, use ADB or root to disable it.
 
 # What USB hub to use?
 
