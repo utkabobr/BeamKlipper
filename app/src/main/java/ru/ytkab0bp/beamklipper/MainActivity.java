@@ -102,6 +102,7 @@ public class MainActivity extends AppCompatActivity {
     private PermissionRowView notificationsRow;
     private PermissionRowView hideServicesChannelRow;
 
+    private ImageView logoView;
     private TextView titleView;
     private FrameLayout badgesLayout;
     private RefBadgeView[] refBadges = new RefBadgeView[3];
@@ -135,6 +136,8 @@ public class MainActivity extends AppCompatActivity {
                 invalidateHomeProgress(homeView.getProgress());
             }
         };
+        badgesLayout.setClipChildren(false);
+        badgesLayout.setClipToPadding(false);
         fl.setOnApplyWindowInsetsListener((v, insets) -> {
             badgesLayout.setPadding(insets.getSystemWindowInsetLeft(), insets.getSystemWindowInsetTop(), insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
             preferencesView.setPadding(insets.getSystemWindowInsetLeft(), 0, insets.getSystemWindowInsetRight(), insets.getSystemWindowInsetBottom());
@@ -147,6 +150,13 @@ public class MainActivity extends AppCompatActivity {
             return insets;
         });
 
+        logoView = new ImageView(this);
+        logoView.setImageResource(R.drawable.icon_logo);
+        badgesLayout.addView(logoView, new FrameLayout.LayoutParams(ViewUtils.dp(28), ViewUtils.dp(28)) {{
+            topMargin = ViewUtils.dp(6);
+            leftMargin = ViewUtils.dp(9);
+        }});
+
         titleView = new TextView(this);
         titleView.setText(R.string.app_name);
         titleView.setGravity(Gravity.CENTER_VERTICAL);
@@ -154,7 +164,8 @@ public class MainActivity extends AppCompatActivity {
         titleView.setTypeface(Typeface.DEFAULT_BOLD);
         titleView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
         titleView.setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewUtils.dp(22 + 18)) {{
-            leftMargin = rightMargin = ViewUtils.dp(9);
+            leftMargin = ViewUtils.dp(9 + 28 + 12);
+            rightMargin = ViewUtils.dp(9);
         }});
         badgesLayout.addView(titleView);
 
@@ -701,8 +712,14 @@ public class MainActivity extends AppCompatActivity {
             badge.setTranslationX(ViewUtils.lerp(fX, tX, pr));
             badge.setTranslationY(ViewUtils.lerp(fY, tY, pr));
         }
-        titleView.setTranslationX(posProgress * (badgesLayout.getWidth() - titleView.getWidth()) / 2f);
+        titleView.setTranslationX(posProgress * ((badgesLayout.getWidth() - titleView.getWidth()) / 2f - ViewUtils.dp(28 + 12)));
         titleView.setTranslationY(posProgress * ViewUtils.dp(92 - 52));
+
+        float scale = ViewUtils.lerp(ViewUtils.dp(28), ViewUtils.dp(52), posProgress) / ViewUtils.dp(28);
+        logoView.setScaleX(scale);
+        logoView.setScaleY(scale);
+        logoView.setTranslationX(posProgress * (badgesLayout.getWidth() - logoView.getWidth()) / 2f);
+        logoView.setTranslationY((posProgress < 0.5f ? posProgress * 2 : 1f - (posProgress - 0.5f) * 2) * -ViewUtils.dp(12));
 
         float negProgress = Math.min(0, progress);
         listCardView.setTranslationY(progress * ViewUtils.dp(92 + (22 + 18) * refBadges.length + (10) * (refBadges.length - 1)));

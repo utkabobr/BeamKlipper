@@ -19,8 +19,8 @@ android {
         applicationId "ru.ytkab0bp.beamklipper"
         minSdk 21
         targetSdk 34
-        versionCode 6
-        versionName "1.0.3_klipper-0.12.0"
+        versionCode 7
+        versionName "1.0.4_klipper-0.12.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
