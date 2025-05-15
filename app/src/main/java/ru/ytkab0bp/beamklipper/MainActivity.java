@@ -556,7 +556,7 @@ public class MainActivity extends AppCompatActivity {
             });
             ll.addView(notificationsRow);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !PermissionsChecker.ignoreNotificationsChannel()) {
+        if (PermissionsChecker.ENABLE_NOTIFICATIONS_CHANNEL_CHECK && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !PermissionsChecker.ignoreNotificationsChannel()) {
             hideServicesChannelRow = new PermissionRowView(this);
             hideServicesChannelRow.bind(R.string.notifications_hide_channel, PermissionsChecker.isNotificationsChannelHidden(), true);
             hideServicesChannelRow.setOnClickListener(v -> {

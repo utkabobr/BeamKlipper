@@ -164,7 +164,12 @@ public class KlipperInstanceView extends LinearLayout {
         if (visible) {
             bindWebSubtitle();
         }
-        setOnClickListener(v -> v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://127.0.0.1:" + WebService.PORT + "/"))));
+        setOnClickListener(v -> {
+            WifiManager wm = (WifiManager) KlipperApp.INSTANCE.getSystemService(Context.WIFI_SERVICE);
+            int i = wm.getConnectionInfo().getIpAddress();
+            String ip = i == 0 || !KlipperInstance.isWebServerRunning() ? "127.0.0.1" : Formatter.formatIpAddress(i);
+            v.getContext().startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("http://" + ip + ":" + WebService.PORT + "/")));
+        });
         setClickable(visible);
 
         startStopButton.setVisibility(GONE);

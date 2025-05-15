@@ -10,6 +10,7 @@ import android.os.Build;
 import androidx.core.content.ContextCompat;
 
 public class PermissionsChecker {
+    public final static boolean ENABLE_NOTIFICATIONS_CHANNEL_CHECK = false;
     private static boolean ignoreNotificationsChannel;
 
     public static void setIgnoreNotificationsChannel(boolean ignoreNotificationsChannel) {
@@ -25,6 +26,9 @@ public class PermissionsChecker {
     }
 
     public static boolean isNotificationsChannelHidden() {
+        if (!ENABLE_NOTIFICATIONS_CHANNEL_CHECK) {
+            return true;
+        }
         NotificationManager notificationManager = (NotificationManager) KlipperApp.INSTANCE.getSystemService(Context.NOTIFICATION_SERVICE);
         return ignoreNotificationsChannel || Build.VERSION.SDK_INT < Build.VERSION_CODES.O || notificationManager.getNotificationChannel(KlipperApp.SERVICES_CHANNEL) != null && notificationManager.getNotificationChannel(KlipperApp.SERVICES_CHANNEL).getImportance() == NotificationManager.IMPORTANCE_NONE;
     }
@@ -44,6 +48,6 @@ public class PermissionsChecker {
     }
 
     public static boolean needBlockStart() {
-        return !hasNotificationPerm() || !hasBatteryPerm() || !isNotificationsChannelHidden() || !isNotBrokenBySDCard();
+        return !hasNotificationPerm() || !hasBatteryPerm() || !isNotBrokenBySDCard() || !isNotificationsChannelHidden();
     }
 }
