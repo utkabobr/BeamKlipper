@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="cardOutlineColor">#22000000</color>
+    <color name="cardOutlineColor">#09000000</color>
+    <color name="navigationBarColor">#F5F5F5</color>
+    <color name="windowBackground">#FFF</color>
+    <color name="dividerColor">#20000000</color>
 </resources>

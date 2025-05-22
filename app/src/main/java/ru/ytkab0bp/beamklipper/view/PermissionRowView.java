@@ -1,7 +1,9 @@
 package ru.ytkab0bp.beamklipper.view;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Paint;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -41,6 +43,21 @@ public class PermissionRowView extends LinearLayout {
                 return false;
             }
         };
+        mSwitch.setTrackTintList(new ColorStateList(new int[][] {
+                {android.R.attr.state_checked},
+                {-android.R.attr.state_checked}
+        }, new int[] {
+                ViewUtils.resolveColor(getContext(), android.R.attr.colorAccent),
+                0xFF7F7F7F
+        }));
+
+        mSwitch.setThumbTintList(new ColorStateList(new int[][] {
+                {android.R.attr.state_checked},
+                {-android.R.attr.state_checked}
+        }, new int[] {
+                Color.WHITE,
+                0x44FFFFFF
+        }));
         addView(mSwitch, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));

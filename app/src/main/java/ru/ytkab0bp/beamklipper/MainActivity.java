@@ -19,11 +19,13 @@ import android.os.Bundle;
 import android.provider.DocumentsContract;
 import android.provider.Settings;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowInsets;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
@@ -54,6 +56,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import ru.ytkab0bp.beamklipper.cloud.CloudAPI;
+import ru.ytkab0bp.beamklipper.cloud.CloudController;
+import ru.ytkab0bp.beamklipper.events.BeamServerDataUpdatedEvent;
 import ru.ytkab0bp.beamklipper.events.InstanceCreatedEvent;
 import ru.ytkab0bp.beamklipper.events.InstanceDestroyedEvent;
 import ru.ytkab0bp.beamklipper.events.InstanceUpdatedEvent;
@@ -61,17 +66,22 @@ import ru.ytkab0bp.beamklipper.events.WebFrontendChangedEvent;
 import ru.ytkab0bp.beamklipper.serial.KlipperProbeTable;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.LogUploader;
+import ru.ytkab0bp.beamklipper.utils.Prefs;
 import ru.ytkab0bp.beamklipper.utils.ViewUtils;
+import ru.ytkab0bp.beamklipper.view.ChangeLogBottomSheet;
 import ru.ytkab0bp.beamklipper.view.EditTextRowView;
 import ru.ytkab0bp.beamklipper.view.HomeView;
 import ru.ytkab0bp.beamklipper.view.KlipperInstanceView;
 import ru.ytkab0bp.beamklipper.view.PermissionRowView;
 import ru.ytkab0bp.beamklipper.view.PreferencesCardView;
+import ru.ytkab0bp.beamklipper.view.QRCodeAlertDialog;
 import ru.ytkab0bp.beamklipper.view.RefBadgeView;
 import ru.ytkab0bp.beamklipper.view.SmoothItemAnimator;
 import ru.ytkab0bp.beamklipper.view.SmoothResizeFrameLayout;
 import ru.ytkab0bp.beamklipper.view.preferences.PreferenceSwitchView;
+import ru.ytkab0bp.beamklipper.view.preferences.PreferenceView;
 import ru.ytkab0bp.eventbus.EventHandler;
+import ru.ytkab0bp.sapil.APICallback;
 
 public class MainActivity extends AppCompatActivity {
     private final static int REQUEST_NOTIFICATIONS = 100;
@@ -88,11 +98,14 @@ public class MainActivity extends AppCompatActivity {
     private LinearLayout newOrEditLayout;
     private TextView newOrEditTitle;
     private KlipperInstance editInstance;
+    private CloudAPI.RemotePrinter pendingRemotePrinter;
     private EditTextRowView nameRow;
     private EditTextRowView configRow;
     private TextView editOpenDirectoryRow;
     private TextView editUploadLogsRow;
     private PreferenceSwitchView autostartRow;
+    private PreferenceSwitchView remoteRow;
+    private PreferenceView remoteCopyRow;
     private TextView newOrEditContinue;
 
     private PreferencesCardView preferencesView;
@@ -106,9 +119,11 @@ public class MainActivity extends AppCompatActivity {
     private ImageView logoView;
     private TextView titleView;
     private FrameLayout badgesLayout;
-    private RefBadgeView[] refBadges = new RefBadgeView[3];
+    private RefBadgeView[] refBadges;
 
     private boolean isTV;
+    private boolean isCurrentLauncher;
+    private boolean isRequestingRemoteToken;
 
     @SuppressLint({"BatteryLife", "InlinedApi"})
     @Override
@@ -126,6 +141,7 @@ public class MainActivity extends AppCompatActivity {
         if (Build.MANUFACTURER.toLowerCase().contains("meizu") || Build.BRAND.toLowerCase().contains("meizu")) {
             PermissionsChecker.setIgnoreNotificationsChannel(true);
         }
+        isCurrentLauncher = getIntent() != null && getIntent().getCategories().contains(Intent.CATEGORY_HOME);
 
         FrameLayout fl = new FrameLayout(this);
 
@@ -147,6 +163,11 @@ public class MainActivity extends AppCompatActivity {
             params.topMargin = ViewUtils.dp(64) + insets.getSystemWindowInsetTop();
             params.rightMargin = ViewUtils.dp(21) + insets.getSystemWindowInsetRight();
             params.bottomMargin = ViewUtils.dp(72) + insets.getSystemWindowInsetBottom();
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                params.bottomMargin -= insets.getInsets(WindowInsets.Type.ime()).bottom / 2;
+            } else if (insets.getSystemWindowInsetBottom() >= ViewUtils.dp(20)) {
+                params.bottomMargin -= insets.getSystemWindowInsetBottom() / 2;
+            }
             listCardView.requestLayout();
             return insets;
         });
@@ -159,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         }});
 
         titleView = new TextView(this);
-        titleView.setText(R.string.app_name);
+        titleView.setText(R.string.AppName);
         titleView.setGravity(Gravity.CENTER_VERTICAL);
         titleView.setTextColor(ViewUtils.resolveColor(this, android.R.attr.colorAccent));
         titleView.setTypeface(Typeface.DEFAULT_BOLD);
@@ -169,46 +190,24 @@ public class MainActivity extends AppCompatActivity {
             rightMargin = ViewUtils.dp(9);
         }});
         badgesLayout.addView(titleView);
-
-        refBadges[0] = new RefBadgeView(this);
-        refBadges[0].setIcon(R.drawable.ic_boosty, R.attr.boostyColor, R.string.badge_boosty);
-        refBadges[0].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://boosty.to/ytkab0bp"))));
-        refBadges[0].setId(R.id.badge_boosty);
-        refBadges[0].setNextFocusDownId(R.id.badge_telegram);
-        badgesLayout.addView(refBadges[0]);
-
-        refBadges[1] = new RefBadgeView(this);
-        refBadges[1].setIcon(R.drawable.ic_telegram, R.attr.telegramColor, R.string.badge_telegram);
-        refBadges[1].getIcon().setTranslationX(-ViewUtils.dp(1));
-        refBadges[1].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/ytkab0bp_channel"))));
-        refBadges[1].setId(R.id.badge_telegram);
-        refBadges[1].setNextFocusUpId(R.id.badge_boosty);
-        refBadges[1].setNextFocusDownId(R.id.badge_k3d);
-        badgesLayout.addView(refBadges[1]);
-
-        refBadges[2] = new RefBadgeView(this);
-        refBadges[2].setIcon(R.drawable.k3d_logo_new_14, 0, R.string.badge_k3d);
-        refBadges[2].getIcon().setPadding(ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8));
-        refBadges[2].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/K_3_D"))));
-        refBadges[2].setId(R.id.badge_k3d);
-        refBadges[2].setNextFocusUpId(R.id.badge_telegram);
-        badgesLayout.addView(refBadges[2]);
+        buildBadges();
 
         listCardView = new MaterialCardView(this);
-        listCardView.setStrokeWidth(ViewUtils.dp(2f));
-        listCardView.setStrokeColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
+        listCardView.setStrokeColor(0);
+        listCardView.setCardBackgroundColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
         listCardView.setRadius(ViewUtils.dp(32));
 
         preferencesView = new PreferencesCardView(this);
+        preferencesView.getHeader().setOnClickListener(v -> homeView.animateTo(-1));
 
         homeView.setProgressListener(this::invalidateHomeProgress);
 
         resizeFrame = new SmoothResizeFrameLayout(this);
 
         Paint dividerPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        dividerPaint.setColor(ViewUtils.resolveColor(MainActivity.this, R.attr.cardOutlineColor));
+        dividerPaint.setColor(ViewUtils.resolveColor(MainActivity.this, R.attr.dividerColor));
         dividerPaint.setStyle(Paint.Style.STROKE);
-        dividerPaint.setStrokeWidth(ViewUtils.dp(1.5f));
+        dividerPaint.setStrokeWidth(ViewUtils.dp(1f));
 
         listView = new RecyclerView(this);
         listView.setOverScrollMode(View.OVER_SCROLL_NEVER);
@@ -239,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
                         tv.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
                         tv.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
                         tv.setGravity(Gravity.CENTER);
-                        tv.setText(R.string.instances);
+                        tv.setText(R.string.Instances);
                         tv.setPadding(ViewUtils.dp(12), 0, ViewUtils.dp(12), 0);
                         tv.setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
                         v = tv;
@@ -266,7 +265,7 @@ public class MainActivity extends AppCompatActivity {
                         TextView title = new TextView(MainActivity.this);
                         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
                         title.setTextColor(ViewUtils.resolveColor(MainActivity.this, android.R.attr.textColorPrimary));
-                        title.setText(R.string.new_instance);
+                        title.setText(R.string.NewInstance);
                         title.setGravity(Gravity.CENTER);
                         ll.addView(title, new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
@@ -295,21 +294,24 @@ public class MainActivity extends AppCompatActivity {
                         view.bind(instances.get(position - 2));
                         view.setOnClickListener(v -> {
                             KlipperInstance inst = instances.get(position - 2);
-                            newOrEditTitle.setText(R.string.edit_instance);
+                            newOrEditTitle.setText(R.string.EditInstance);
                             editInstance = inst;
                             editOpenDirectoryRow.setVisibility(View.VISIBLE);
                             editUploadLogsRow.setVisibility(View.VISIBLE);
-                            autostartRow.bind(getString(R.string.autostart), null, inst.autostart);
-                            nameRow.bind(R.string.instance_name, inst.name);
+                            remoteRow.setVisibility(BeamServerData.isCloudAvailable() ? View.VISIBLE : View.GONE);
+                            remoteRow.bind(getString(R.string.BeamRemoteAccess), null, inst.remoteToken != null);
+                            remoteCopyRow.setVisibility(BeamServerData.isCloudAvailable() && inst.remoteToken != null ? View.VISIBLE : View.GONE);
+                            autostartRow.bind(getString(R.string.Autostart), null, inst.autostart);
+                            nameRow.bind(R.string.InstanceName, inst.name);
                             configRow.setVisibility(View.GONE);
                             animateNewOrEditLayout(true);
-                            newOrEditContinue.setText(R.string.instance_ok);
+                            newOrEditContinue.setText(R.string.InstanceOK);
                         });
                         view.setOnLongClickListener(v -> {
                             KlipperInstance inst = instances.get(position - 2);
                             new MaterialAlertDialogBuilder(MainActivity.this)
-                                    .setTitle(getString(R.string.instance_delete, inst.name))
-                                    .setMessage(R.string.instance_delete_confirm)
+                                    .setTitle(getString(R.string.InstanceDelete, inst.name))
+                                    .setMessage(R.string.InstanceDeleteConfirm)
                                     .setNegativeButton(android.R.string.cancel, null)
                                     .setPositiveButton(android.R.string.ok, (dialog, which) -> KlipperApp.DATABASE.delete(inst))
                                     .show();
@@ -324,15 +326,17 @@ public class MainActivity extends AppCompatActivity {
                     }
                     case VIEW_TYPE_NEW:
                         holder.itemView.setOnClickListener(v -> {
-                            newOrEditTitle.setText(R.string.new_instance);
+                            newOrEditTitle.setText(R.string.NewInstance);
                             editInstance = null;
                             editOpenDirectoryRow.setVisibility(View.GONE);
                             editUploadLogsRow.setVisibility(View.GONE);
-                            autostartRow.bind(getString(R.string.autostart), null, false);
-                            nameRow.bind(R.string.instance_name, null);
-                            configRow.bind(R.string.instance_config, null);
+                            remoteRow.setVisibility(View.GONE);
+                            remoteCopyRow.setVisibility(View.GONE);
+                            autostartRow.bind(getString(R.string.Autostart), null, false);
+                            nameRow.bind(R.string.InstanceName, null);
+                            configRow.bind(R.string.InstanceConfig, null);
                             configRow.setVisibility(View.VISIBLE);
-                            newOrEditContinue.setText(R.string.instance_create);
+                            newOrEditContinue.setText(R.string.InstanceCreate);
                             animateNewOrEditLayout(true);
                         });
                         break;
@@ -390,10 +394,10 @@ public class MainActivity extends AppCompatActivity {
             et.setText(nameRow.getText());
             frame.addView(et);
             new MaterialAlertDialogBuilder(v.getContext())
-                    .setTitle(R.string.instance_name)
+                    .setTitle(R.string.InstanceName)
                     .setView(frame)
                     .setNegativeButton(android.R.string.cancel, null)
-                    .setPositiveButton(android.R.string.ok, (dialog, which) -> nameRow.bind(R.string.instance_name, et.getText().toString()))
+                    .setPositiveButton(android.R.string.ok, (dialog, which) -> nameRow.bind(R.string.InstanceName, et.getText().toString()))
                     .show();
         });
         newOrEditLayout.addView(nameRow);
@@ -407,14 +411,14 @@ public class MainActivity extends AppCompatActivity {
             }
             Collections.sort(filesList);
             new MaterialAlertDialogBuilder(v.getContext())
-                    .setTitle(R.string.instance_config)
-                    .setItems(filesList.toArray(new String[0]), (dialog, which) -> configRow.bind(R.string.instance_config, filesList.get(which)))
+                    .setTitle(R.string.InstanceConfig)
+                    .setItems(filesList.toArray(new String[0]), (dialog, which) -> configRow.bind(R.string.InstanceConfig, filesList.get(which)))
                     .show();
         });
         newOrEditLayout.addView(configRow);
 
         editOpenDirectoryRow = new TextView(this);
-        editOpenDirectoryRow.setText(R.string.edit_open_directory);
+        editOpenDirectoryRow.setText(R.string.EditOpenDirectory);
         editOpenDirectoryRow.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
         editOpenDirectoryRow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         editOpenDirectoryRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -438,7 +442,7 @@ public class MainActivity extends AppCompatActivity {
         newOrEditLayout.addView(editOpenDirectoryRow);
 
         editUploadLogsRow = new TextView(this);
-        editUploadLogsRow.setText(R.string.upload_logs);
+        editUploadLogsRow.setText(R.string.UploadLogs);
         editUploadLogsRow.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
         editUploadLogsRow.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
         editUploadLogsRow.setGravity(Gravity.START | Gravity.CENTER_VERTICAL);
@@ -453,6 +457,123 @@ public class MainActivity extends AppCompatActivity {
         autostartRow.setOnClickListener(v -> autostartRow.setChecked(!autostartRow.isChecked()));
         newOrEditLayout.addView(autostartRow);
 
+        remoteRow = new PreferenceSwitchView(this);
+        remoteRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        remoteRow.setOnClickListener(v -> {
+            if (isRequestingRemoteToken) {
+                return;
+            }
+            if (Prefs.getCloudAPIToken() == null || CloudController.getUserFeatures() != null && CloudController.getUserFeatures().remoteAccessLevel != -1 && CloudController.getUserInfo() != null &&
+                CloudController.getUserInfo().currentLevel < CloudController.getUserFeatures().remoteAccessLevel) {
+                startActivity(new Intent(this, CloudActivity.class));
+            } else if (CloudController.getUserInfo() == null) {
+                Toast.makeText(this, R.string.BeamRemoteAccessStillLoading, Toast.LENGTH_SHORT).show();
+            } else {
+                if (editInstance.remoteId != null) {
+                    pendingRemotePrinter = null;
+                    remoteRow.setChecked(false);
+                    CloudAPI.INSTANCE.remoteDeletePrinter(editInstance.remoteId, response -> {});
+                    editInstance.remoteId = null;
+                    editInstance.remoteToken = null;
+                    remoteCopyRow.setVisibility(View.GONE);
+                    return;
+                }
+
+                isRequestingRemoteToken = true;
+                CloudAPI.INSTANCE.remoteGetPrinters(new APICallback<List<CloudAPI.RemotePrinter>>() {
+                    @Override
+                    public void onResponse(List<CloudAPI.RemotePrinter> response) {
+                        if (response.size() >= CloudController.getUserFeatures().remoteAccessPrintersLimit) {
+                            isRequestingRemoteToken = false;
+                            ViewUtils.postOnMainThread(() -> {
+                                CharSequence[] items = new CharSequence[response.size()];
+                                for (int i = 0; i < items.length; i++) {
+                                    items[i] = response.get(i).name;
+                                }
+                                new MaterialAlertDialogBuilder(MainActivity.this)
+                                        .setTitle(R.string.BeamRemoteAccessTooManyPrinters)
+                                        .setItems(items, (dialog, which) -> CloudAPI.INSTANCE.remoteDeletePrinter(response.get(which).id, new APICallback<Boolean>() {
+                                            @Override
+                                            public void onResponse(Boolean response) {
+                                                isRequestingRemoteToken = false;
+                                                ViewUtils.postOnMainThread(() -> remoteRow.callOnClick());
+                                            }
+
+                                            @Override
+                                            public void onException(Exception e) {
+                                                isRequestingRemoteToken = false;
+                                                Log.e("remote", "Failed to delete printer", e);
+                                                ViewUtils.postOnMainThread(() -> Toast.makeText(MainActivity.this, R.string.ErrorTryLater, Toast.LENGTH_SHORT).show());
+                                            }
+                                        }))
+                                        .setPositiveButton(R.string.Cancel, null)
+                                        .show();
+                            });
+                        } else {
+                            CloudAPI.INSTANCE.remoteCreatePrinter(editInstance.name, new APICallback<CloudAPI.RemotePrinter>() {
+                                @Override
+                                public void onResponse(CloudAPI.RemotePrinter response) {
+                                    editInstance.remoteId = response.id;
+                                    editInstance.remoteToken = response.token;
+                                    pendingRemotePrinter = response;
+                                    ViewUtils.postOnMainThread(() -> {
+                                        remoteRow.setChecked(true);
+                                        remoteCopyRow.setVisibility(View.VISIBLE);
+                                        isRequestingRemoteToken = false;
+                                    });
+                                }
+
+                                @Override
+                                public void onException(Exception e) {
+                                    isRequestingRemoteToken = false;
+                                    Log.e("remote", "Failed to create printer", e);
+                                    ViewUtils.postOnMainThread(() -> Toast.makeText(MainActivity.this, R.string.ErrorTryLater, Toast.LENGTH_SHORT).show());
+                                }
+                            });
+                        }
+                    }
+
+                    @Override
+                    public void onException(Exception e) {
+                        isRequestingRemoteToken = false;
+                        Log.e("remote", "Failed to get printers", e);
+                        ViewUtils.postOnMainThread(() -> Toast.makeText(MainActivity.this, R.string.ErrorTryLater, Toast.LENGTH_SHORT).show());
+                    }
+                });
+            }
+        });
+        newOrEditLayout.addView(remoteRow);
+
+        remoteCopyRow = new PreferenceView(this);
+        remoteCopyRow.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(52)));
+        remoteCopyRow.bind(getString(R.string.BeamRemoteAccessShowPublicLink), null);
+        remoteCopyRow.setOnClickListener(v -> {
+            if (isRequestingRemoteToken) {
+                return;
+            }
+            isRequestingRemoteToken = true;
+            CloudAPI.INSTANCE.remoteGetPrinters(new APICallback<List<CloudAPI.RemotePrinter>>() {
+                @Override
+                public void onResponse(List<CloudAPI.RemotePrinter> response) {
+                    isRequestingRemoteToken = false;
+                    for (CloudAPI.RemotePrinter printer : response) {
+                        if (Objects.equals(printer.id, editInstance.remoteId)) {
+                            ViewUtils.postOnMainThread(() -> new QRCodeAlertDialog(MainActivity.this, printer.publicUrl).show());
+                            break;
+                        }
+                    }
+                }
+
+                @Override
+                public void onException(Exception e) {
+                    isRequestingRemoteToken = false;
+                    Log.e("remote", "Failed to get printers", e);
+                    ViewUtils.postOnMainThread(() -> Toast.makeText(MainActivity.this, R.string.ErrorTryLater, Toast.LENGTH_SHORT).show());
+                }
+            });
+        });
+        newOrEditLayout.addView(remoteCopyRow);
+
         newOrEditContinue = new TextView(this);
         newOrEditContinue.setTextColor(ViewUtils.resolveColor(this, android.R.attr.textColorPrimary));
         newOrEditContinue.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);
@@ -464,8 +585,8 @@ public class MainActivity extends AppCompatActivity {
         newOrEditContinue.setOnClickListener(v -> {
             if (TextUtils.isEmpty(nameRow.getText())) {
                 new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle(R.string.error)
-                        .setMessage(R.string.error_name_empty)
+                        .setTitle(R.string.Error)
+                        .setMessage(R.string.ErrorNameEmpty)
                         .setPositiveButton(android.R.string.ok, null)
                         .show();
                 return;
@@ -476,14 +597,15 @@ public class MainActivity extends AppCompatActivity {
                 editInstance.autostart = autostartRow.isChecked();
                 KlipperApp.DATABASE.update(editInstance);
                 editInstance = null;
+                pendingRemotePrinter = null;
                 animateNewOrEditLayout(false);
                 return;
             }
 
             if (TextUtils.isEmpty(configRow.getText())) {
                 new MaterialAlertDialogBuilder(MainActivity.this)
-                        .setTitle(R.string.error)
-                        .setMessage(R.string.error_config_empty)
+                        .setTitle(R.string.Error)
+                        .setMessage(R.string.ErrorConfigEmpty)
                         .setPositiveButton(android.R.string.ok, null)
                         .show();
                 return;
@@ -528,14 +650,14 @@ public class MainActivity extends AppCompatActivity {
         fl.addView(homeView);
 
         noPermsLayout = new MaterialCardView(this);
-        noPermsLayout.setStrokeWidth(ViewUtils.dp(2f));
-        noPermsLayout.setStrokeColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
+        noPermsLayout.setCardBackgroundColor(ViewUtils.resolveColor(this, R.attr.cardOutlineColor));
+        noPermsLayout.setStrokeColor(0);
         noPermsLayout.setRadius(ViewUtils.dp(32));
         LinearLayout ll = new LinearLayout(this);
         ll.setOrientation(LinearLayout.VERTICAL);
 
         batteryRow = new PermissionRowView(this);
-        batteryRow.bind(R.string.battery_optimization_exclusion, PermissionsChecker.hasBatteryPerm(), true);
+        batteryRow.bind(R.string.BatteryOptimizationExclusion, PermissionsChecker.hasBatteryPerm(), true);
         batteryRow.setPadding(batteryRow.getPaddingLeft(), ViewUtils.dp(6), batteryRow.getPaddingRight(), batteryRow.getPaddingBottom());
         batteryRow.setOnClickListener(v -> {
             PermissionRowView r = (PermissionRowView) v;
@@ -547,7 +669,7 @@ public class MainActivity extends AppCompatActivity {
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             notificationsRow = new PermissionRowView(this);
-            notificationsRow.bind(R.string.notifications, PermissionsChecker.hasNotificationPerm(), true);
+            notificationsRow.bind(R.string.Notifications, PermissionsChecker.hasNotificationPerm(), true);
             notificationsRow.setOnClickListener(v -> {
                 PermissionRowView r = (PermissionRowView) v;
                 if (!r.isChecked()) {
@@ -558,11 +680,11 @@ public class MainActivity extends AppCompatActivity {
         }
         if (PermissionsChecker.ENABLE_NOTIFICATIONS_CHANNEL_CHECK && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O && !PermissionsChecker.ignoreNotificationsChannel()) {
             hideServicesChannelRow = new PermissionRowView(this);
-            hideServicesChannelRow.bind(R.string.notifications_hide_channel, PermissionsChecker.isNotificationsChannelHidden(), true);
+            hideServicesChannelRow.bind(R.string.HideNotificationsChannel, PermissionsChecker.isNotificationsChannelHidden(), true);
             hideServicesChannelRow.setOnClickListener(v -> {
                 PermissionRowView r = (PermissionRowView) v;
                 if (!r.isChecked()) {
-                    Toast.makeText(this, getString(R.string.notifications_hide_channel_info, getString(R.string.channel_services)), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.HideNotificationsChannelInfo, getString(R.string.ServicesChannel)), Toast.LENGTH_SHORT).show();
                     startActivity(new Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
                             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                             .putExtra(Settings.EXTRA_APP_PACKAGE, getPackageName())
@@ -573,10 +695,10 @@ public class MainActivity extends AppCompatActivity {
         }
         if (!PermissionsChecker.isNotBrokenBySDCard()) {
             brokenBySDCardRow = new PermissionRowView(this);
-            brokenBySDCardRow.bind(R.string.not_on_sdcard, PermissionsChecker.isNotBrokenBySDCard(), true);
+            brokenBySDCardRow.bind(R.string.NotOnSdcard, PermissionsChecker.isNotBrokenBySDCard(), true);
             brokenBySDCardRow.setOnClickListener(v -> {
                 startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).setData(Uri.parse("package:" + KlipperApp.INSTANCE.getPackageName())));
-                Toast.makeText(this, R.string.not_on_sdcard_info, Toast.LENGTH_SHORT).show();
+                Toast.makeText(this, R.string.NotOnSdcardInfo, Toast.LENGTH_SHORT).show();
             });
             ll.addView(brokenBySDCardRow);
         }
@@ -584,7 +706,7 @@ public class MainActivity extends AppCompatActivity {
         PermissionRowView row = new PermissionRowView(this);
         row.titleView.setGravity(Gravity.CENTER);
         row.titleView.setTypeface(ViewUtils.getTypeface(ViewUtils.ROBOTO_MEDIUM));
-        row.titleView.setText(R.string.next);
+        row.titleView.setText(R.string.Next);
         row.mSwitch.setVisibility(View.GONE);
         row.setPadding(row.getPaddingLeft(), ViewUtils.dp(14), row.getPaddingRight(), ViewUtils.dp(14));
         row.setOnClickListener(v -> {
@@ -614,6 +736,60 @@ public class MainActivity extends AppCompatActivity {
         processIntent(getIntent());
         instances = new ArrayList<>(KlipperInstance.getInstances());
         KlipperApp.EVENT_BUS.registerListener(this);
+
+        if (!Objects.equals(Prefs.getLastCommit(), BuildConfig.COMMIT) && KlipperApp.hasUpdateInfo) {
+            Prefs.setLastCommit();
+            BeamServerData.load();
+            new ChangeLogBottomSheet(this).show();
+        }
+    }
+
+    @EventHandler(runOnMainThread = true)
+    public void onBeamDataUpdated(BeamServerDataUpdatedEvent e) {
+        buildBadges();
+        invalidateHomeProgress(homeView.getProgress());
+    }
+
+    private void buildBadges() {
+        if (refBadges != null) {
+            for (RefBadgeView refBadge : refBadges) {
+                badgesLayout.removeView(refBadge);
+            }
+        }
+        refBadges = new RefBadgeView[BeamServerData.isBoostyAvailable() ? 3 : 2];
+        int i = 0;
+
+        if (BeamServerData.isBoostyAvailable()) {
+            refBadges[i] = new RefBadgeView(this);
+            refBadges[i].setIcon(R.drawable.ic_boosty, R.attr.boostyColor, R.string.BadgeBoosty);
+            refBadges[i].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://boosty.to/ytkab0bp"))));
+            refBadges[i].setId(R.id.badge_boosty);
+            refBadges[i].setNextFocusDownId(R.id.badge_telegram);
+            badgesLayout.addView(refBadges[i]);
+            i++;
+        }
+
+        refBadges[i] = new RefBadgeView(this);
+        refBadges[i].setIcon(R.drawable.ic_telegram, R.attr.telegramColor, R.string.BadgeTelegram);
+        refBadges[i].getIcon().setTranslationX(-ViewUtils.dp(1));
+        refBadges[i].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/ytkab0bp_channel"))));
+        refBadges[i].setId(R.id.badge_telegram);
+        refBadges[i].setNextFocusUpId(R.id.badge_boosty);
+        refBadges[i].setNextFocusDownId(R.id.badge_k3d);
+        badgesLayout.addView(refBadges[i]);
+        i++;
+
+        refBadges[i] = new RefBadgeView(this);
+        refBadges[i].setIcon(R.drawable.k3d_logo_new_14, 0, R.string.BadgeK3D);
+        refBadges[i].getIcon().setPadding(ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8), ViewUtils.dp(8));
+        refBadges[i].setOnClickListener(v -> startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse("https://t.me/K_3_D"))));
+        refBadges[i].setId(R.id.badge_k3d);
+        refBadges[i].setNextFocusUpId(R.id.badge_telegram);
+        badgesLayout.addView(refBadges[i]);
+    }
+
+    public boolean isCurrentLauncher() {
+        return isCurrentLauncher;
     }
 
     @Override
@@ -813,9 +989,9 @@ public class MainActivity extends AppCompatActivity {
             listView.setAlpha(0);
         }
         newOrEditAnimation = new SpringAnimation(new FloatValueHolder(visible ? 0 : 1))
-                .setMinimumVisibleChange(1 / 256f)
+                .setMinimumVisibleChange(1 / 500f)
                 .setSpring(new SpringForce(visible ? 1 : 0)
-                        .setStiffness(1000f)
+                        .setStiffness(850f)
                         .setDampingRatio(SpringForce.DAMPING_RATIO_NO_BOUNCY))
                 .addUpdateListener((animation, value, velocity) -> {
                     listView.setAlpha(1f - value);
@@ -830,6 +1006,15 @@ public class MainActivity extends AppCompatActivity {
                         newOrEditLayout.setVisibility(View.GONE);
                         resizeFrame.removeForceNotMeasure(newOrEditLayout);
                         listView.getChildAt(2 + (KlipperInstance.isWebServerRunning() ? 1 : 0)).requestFocus();
+
+                        if (editInstance != null) {
+                            editInstance = null;
+
+                            if (pendingRemotePrinter != null) {
+                                CloudAPI.INSTANCE.remoteDeletePrinter(pendingRemotePrinter.id, response -> {});
+                                pendingRemotePrinter = null;
+                            }
+                        }
                     }
                     newOrEditAnimation = null;
                 });

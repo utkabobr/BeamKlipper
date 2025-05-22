@@ -189,10 +189,10 @@ public class InstanceFilesProvider extends DocumentsProvider {
         for (KlipperInstance inst : KlipperInstance.getInstances()) {
             MatrixCursor.RowBuilder row = result.newRow();
             row.add(DocumentsContract.Root.COLUMN_ROOT_ID, inst.id);
-            row.add(DocumentsContract.Root.COLUMN_SUMMARY, KlipperApp.INSTANCE.getString(R.string.instance_n, inst.name));
+            row.add(DocumentsContract.Root.COLUMN_SUMMARY, KlipperApp.INSTANCE.getString(R.string.InstanceN, inst.name));
 
             row.add(DocumentsContract.Root.COLUMN_FLAGS, DocumentsContract.Root.FLAG_SUPPORTS_CREATE);
-            row.add(DocumentsContract.Root.COLUMN_TITLE, KlipperApp.INSTANCE.getString(R.string.app_name));
+            row.add(DocumentsContract.Root.COLUMN_TITLE, KlipperApp.INSTANCE.getString(R.string.AppName));
 
             row.add(DocumentsContract.Root.COLUMN_DOCUMENT_ID, getDocIdForFile(inst, inst.getPublicDirectory()));
 

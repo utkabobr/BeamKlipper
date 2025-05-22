@@ -25,8 +25,8 @@ import ru.ytkab0bp.beamklipper.KlipperInstance;
 import ru.ytkab0bp.beamklipper.R;
 
 public class BaseMoonrakerService extends BasePythonService {
-    private final static int BASE_ID = 200000;
-    private final static Pattern MOONRAKER_PORT_PATTERN = Pattern.compile("port: (\\d+)");
+    public final static int BASE_ID = 200000;
+    public final static Pattern MOONRAKER_PORT_PATTERN = Pattern.compile("port: (\\d+)");
 
     private int index;
 
@@ -39,8 +39,8 @@ public class BaseMoonrakerService extends BasePythonService {
     public IBinder onBind(Intent intent) {
         IBinder b = super.onBind(intent);
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
-        not.setContentTitle(getString(R.string.moonraker_title, getInstance().name))
-                .setContentText(getString(R.string.moonraker_description))
+        not.setContentTitle(getString(R.string.MoonrakerTitle, getInstance().name))
+                .setContentText(getString(R.string.MoonrakerDescription))
                 .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(BASE_ID + index, not.build());
@@ -115,7 +115,7 @@ public class BaseMoonrakerService extends BasePythonService {
         }
     }
 
-    private static String readString(File file) throws IOException {
+    public static String readString(File file) throws IOException {
         InputStream in = new FileInputStream(file);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buffer = new byte[10240]; int c;

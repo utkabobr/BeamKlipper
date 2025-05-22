@@ -7,14 +7,22 @@ import android.app.NotificationManager;
 import android.content.Context;
 import android.os.Build;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Objects;
 
+import ru.ytkab0bp.beamklipper.cloud.CloudController;
 import ru.ytkab0bp.beamklipper.db.BeamDB;
+import ru.ytkab0bp.beamklipper.cloud.AndroidPlatform;
 import ru.ytkab0bp.beamklipper.serial.UsbSerialManager;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
+import ru.ytkab0bp.beamklipper.utils.ViewUtils;
 import ru.ytkab0bp.eventbus.EventBus;
+import ru.ytkab0bp.remotebeamlib.RemoteBeam;
 
 public class KlipperApp extends Application {
     public final static String PERMISSION = BuildConfig.APPLICATION_ID + ".permission.INTERNAL_BROADCASTS";
@@ -23,6 +31,7 @@ public class KlipperApp extends Application {
     public static KlipperApp INSTANCE;
     public static BeamDB DATABASE;
     public static EventBus EVENT_BUS = EventBus.newBus("main");
+    public static boolean hasUpdateInfo;
 
     @Override
     public void onCreate() {
@@ -33,10 +42,28 @@ public class KlipperApp extends Application {
         KlipperInstance.onInstancesLoadedFromDB(DATABASE.getInstances());
         EventBus.registerImpl(this);
         BundleInstaller.init(this);
+        RemoteBeam.init(new AndroidPlatform());
+        CloudController.initCached();
+        CloudController.init();
+
+        try {
+            getAssets().open("update.json").close();
+            hasUpdateInfo = true;
+        } catch (IOException e) {
+            hasUpdateInfo = false;
+        }
+        try {
+            BeamServerData.SERVER_DATA = new BeamServerData(new JSONObject(Prefs.getBeamServerData()));
+        } catch (JSONException e) {
+            throw new RuntimeException(e);
+        }
+        if (System.currentTimeMillis() - Prefs.getLastCheckedInfo() >= 86400000L) {
+            ViewUtils.postOnMainThread(BeamServerData::load);
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager nm = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
-            nm.createNotificationChannel(new NotificationChannel(SERVICES_CHANNEL, KlipperApp.INSTANCE.getString(R.string.channel_services), NotificationManager.IMPORTANCE_LOW));
+            nm.createNotificationChannel(new NotificationChannel(SERVICES_CHANNEL, KlipperApp.INSTANCE.getString(R.string.ServicesChannel), NotificationManager.IMPORTANCE_LOW));
         }
 
         if (Objects.equals(getProcessNameCompat(), getPackageName())) {

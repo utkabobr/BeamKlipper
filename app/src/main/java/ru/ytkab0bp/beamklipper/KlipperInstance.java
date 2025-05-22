@@ -1,5 +1,6 @@
 package ru.ytkab0bp.beamklipper;
 
+import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -10,19 +11,24 @@ import android.util.Log;
 import androidx.annotation.Nullable;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
 
 import ru.ytkab0bp.beamklipper.events.InstanceStateChangedEvent;
 import ru.ytkab0bp.beamklipper.events.WebStateChangedEvent;
+import ru.ytkab0bp.beamklipper.service.BaseKlippyService;
+import ru.ytkab0bp.beamklipper.service.BaseMoonrakerService;
 import ru.ytkab0bp.beamklipper.service.BasePythonService;
 import ru.ytkab0bp.beamklipper.service.CameraService;
 import ru.ytkab0bp.beamklipper.service.WebService;
 import ru.ytkab0bp.beamklipper.utils.Prefs;
+import ru.ytkab0bp.remotebeamlib.RemoteBeamConnection;
 
 public class KlipperInstance {
     public final static int SLOTS_COUNT = 4;
@@ -32,7 +38,10 @@ public class KlipperInstance {
     public String id;
     public InstanceIcon icon = InstanceIcon.PRINTER;
     public boolean autostart;
+    public String remoteId;
+    public String remoteToken;
     private State state = State.IDLE;
+    private RemoteBeamConnection remoteBeamConnection;
 
     private static Map<KlipperInstance, Integer> slots = new HashMap<>();
     private static ServiceConnection webServerConnection;
@@ -187,6 +196,42 @@ public class KlipperInstance {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+        if (remoteId != null) {
+            try {
+                File f = new File(getPublicDirectory(), "config/moonraker.conf");
+                String s = BaseMoonrakerService.readString(f);
+                Matcher m = BaseMoonrakerService.MOONRAKER_PORT_PATTERN.matcher(s);
+                if (m.find()) {
+                    int port = Integer.parseInt(m.group(1));
+                    remoteBeamConnection = new RemoteBeamConnection(remoteToken, "http://127.0.0.1:8888", "127.0.0.1:" + port, new RemoteBeamConnection.EventListener() {
+                        @Override
+                        public void onConnected(RemoteBeamConnection conn) {
+                            Log.d(TAG, "Remote connected");
+                        }
+
+                        @Override
+                        public void onError(RemoteBeamConnection conn, Exception e) {
+                            Log.e(TAG, "Remote error", e);
+                        }
+
+                        @Override
+                        public void onServerRejected(RemoteBeamConnection conn, String message) {
+                            Log.d(TAG, "Server rejected: " + message);
+                        }
+
+                        @Override
+                        public void onDisconnected(RemoteBeamConnection conn) {
+                            Log.d(TAG, "Remote disconnected");
+                        }
+                    });
+                    remoteBeamConnection.connect();
+                } else {
+                    throw new IOException("No match");
+                }
+            } catch (IOException e) {
+                Log.e(TAG, "Failed to parse port", e);
+            }
+        }
     }
 
     public static void onCameraConfigChanged(boolean enable) {
@@ -227,15 +272,22 @@ public class KlipperInstance {
         if (state != State.RUNNING) return;
         notifyStateChanged(State.STOPPING);
 
+        NotificationManager nm = (NotificationManager) KlipperApp.INSTANCE.getSystemService(Context.NOTIFICATION_SERVICE);
         if (klippyConnection != null) {
             KlipperApp.INSTANCE.unbindService(klippyConnection);
             KlipperApp.INSTANCE.stopService(klippyIntent);
             onKlippyUnbound();
+            nm.cancel(BaseKlippyService.BASE_ID + slot);
         }
         if (moonrakerConnection != null) {
             KlipperApp.INSTANCE.unbindService(moonrakerConnection);
             KlipperApp.INSTANCE.stopService(moonrakerIntent);
             onMoonrakerUnbound();
+            nm.cancel(BaseMoonrakerService.BASE_ID + slot);
+        }
+        if (remoteBeamConnection != null) {
+            remoteBeamConnection.disconnect();
+            remoteBeamConnection = null;
         }
     }
 

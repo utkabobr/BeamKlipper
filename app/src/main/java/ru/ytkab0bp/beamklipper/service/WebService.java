@@ -90,8 +90,8 @@ public class WebService extends Service {
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
-        not.setContentTitle(getString(R.string.web_title))
-                .setContentText(getString(R.string.web_description))
+        not.setContentTitle(getString(R.string.WebTitle))
+                .setContentText(getString(R.string.WebDescription))
                 .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(ID, not.build());

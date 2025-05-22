@@ -1,5 +1,6 @@
 package ru.ytkab0bp.beamklipper.utils;
 
+import android.animation.TimeInterpolator;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.TypedArray;
@@ -11,6 +12,7 @@ import android.graphics.drawable.RippleDrawable;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.TypedValue;
+import android.view.animation.PathInterpolator;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -18,11 +20,16 @@ import java.util.Map;
 import ru.ytkab0bp.beamklipper.KlipperApp;
 
 public class ViewUtils {
+    public final static TimeInterpolator CUBIC_INTERPOLATOR = new PathInterpolator(0.25f, 0, 0.25f, 1f);
     public final static String ROBOTO_MEDIUM = "Roboto-Medium";
 
     private static Map<String, Typeface> typefaceCache = new HashMap<>();
 
     private final static Handler uiHandler = new Handler(Looper.getMainLooper());
+
+    public static void removeCallbacks(Runnable r) {
+        uiHandler.removeCallbacks(r);
+    }
 
     public static void postOnMainThread(Runnable r) {
         uiHandler.post(r);

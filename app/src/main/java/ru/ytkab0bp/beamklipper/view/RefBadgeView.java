@@ -54,7 +54,6 @@ public class RefBadgeView extends LinearLayout {
             setMarginEnd(ViewUtils.dp(22 + 9));
         }});
 
-        setBackground(ViewUtils.createRipple(ViewUtils.resolveColor(context, android.R.attr.colorControlHighlight), 0));
         setWillNotDraw(false);
         setLayoutParams(new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(22 + 18)) {{
             leftMargin = rightMargin = ViewUtils.dp(9);
@@ -99,7 +98,7 @@ public class RefBadgeView extends LinearLayout {
         outlinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         outlinePaint.setStyle(Paint.Style.STROKE);
         outlinePaint.setStrokeWidth(ViewUtils.dp(1.5f));
-        outlinePaint.setColor(ViewUtils.resolveColor(getContext(), R.attr.cardOutlineColor));
+        outlinePaint.setColor(ViewUtils.resolveColor(getContext(), R.attr.dividerColor));
         title.setTextColor(ViewUtils.resolveColor(getContext(), android.R.attr.textColorPrimary));
     }
 
@@ -107,8 +106,10 @@ public class RefBadgeView extends LinearLayout {
         icon.setImageResource(i);
         if (bgColor != 0) {
             paint.setColor(ViewUtils.resolveColor(getContext(), bgColor));
+            setBackground(ViewUtils.createRipple(0x21000000, 0));
         } else {
             setColored();
+            setBackground(ViewUtils.createRipple(ViewUtils.resolveColor(getContext(), android.R.attr.colorControlHighlight), 0));
         }
         title.setText(titleRes);
     }

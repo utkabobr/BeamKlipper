@@ -21,8 +21,9 @@ public class PreferenceView extends LinearLayout {
         setOrientation(VERTICAL);
         setGravity(Gravity.CENTER_VERTICAL);
         setBackground(ViewUtils.resolveDrawable(context, android.R.attr.selectableItemBackground));
-        setPadding(ViewUtils.dp(21), ViewUtils.dp(6), ViewUtils.dp(16), ViewUtils.dp(6));
-        setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(64)));
+        setPadding(ViewUtils.dp(21), ViewUtils.dp(16), ViewUtils.dp(16), ViewUtils.dp(16));
+        setMinimumHeight(ViewUtils.dp(52));
+        setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
 
         title = new TextView(context);
         title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 16);

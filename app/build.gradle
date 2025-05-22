@@ -11,6 +11,8 @@ plugins {
     id 'com.chaquo.python'
 }
 
+def commit = getGitCommitHash(file('.'))
+
 android {
     namespace 'ru.ytkab0bp.beamklipper'
     compileSdk 35
@@ -19,8 +21,8 @@ android {
         applicationId "ru.ytkab0bp.beamklipper"
         minSdk 21
         targetSdk 35
-        versionCode 8
-        versionName "1.1.0_klipper-0.12.0"
+        versionCode 10
+        versionName "2.0.0_klipper-0.12.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
@@ -64,8 +66,19 @@ android {
 
     buildTypes {
         release {
+            buildConfigField "boolean", "IS_GOOGLE_PLAY", "false"
+            buildConfigField "String", "COMMIT", "\"" + commit + "\""
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+        debug {
+            buildConfigField "boolean", "IS_GOOGLE_PLAY", "false"
+            buildConfigField "String", "COMMIT", "\"" + commit + "\""
+            ndk {
+                debugSymbolLevel 'NONE'
+                //noinspection ChromeOsAbiSupport
+                abiFilters "arm64-v8a"
+            }
         }
     }
     compileOptions {
@@ -87,25 +100,30 @@ android {
 
     applicationVariants.all { variant ->
         variant.outputs.all {
-            outputFileName = "BeamKlipper_" + getGitCommitHash(file('.')) + ".apk"
+            outputFileName = "BeamKlipper_" + commit + ".apk"
         }
     }
 }
 
 dependencies {
     implementation 'com.github.mik3y:usb-serial-for-android:3.7.2'
-    implementation 'androidx.annotation:annotation:1.8.2'
-    implementation 'androidx.core:core:1.13.1'
-    implementation 'androidx.activity:activity:1.9.2'
+    implementation 'androidx.annotation:annotation:1.9.1'
+    implementation 'androidx.core:core:1.16.0'
+    implementation 'androidx.activity:activity:1.10.1'
     implementation 'androidx.appcompat:appcompat:1.7.0'
     implementation 'com.goterl:lazysodium-android:5.1.0@aar'
-    implementation 'org.java-websocket:Java-WebSocket:1.5.7'
+    implementation 'org.java-websocket:Java-WebSocket:1.6.0'
     implementation 'com.google.android.material:material:1.12.0'
     implementation 'org.tukaani:xz:1.9'
     implementation 'org.kamranzafar:jtar:2.3'
     //noinspection GradleDependency
     implementation 'com.squareup.okhttp3:okhttp:3.12.6'
+    implementation 'com.google.code.gson:gson:2.13.1'
+    implementation 'com.loopj.android:android-async-http:1.4.11'
+    implementation 'com.github.androidmads:QRGenerator:1.0.5'
 
+    implementation project(":remotebeamlib")
+    implementation project(":sapil")
     implementation project(":eventbus")
     implementation project(":eventbus_api")
     annotationProcessor project(":eventbus_processor")

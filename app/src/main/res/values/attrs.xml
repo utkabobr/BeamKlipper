@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <attr name="dividerColor" format="color|reference"/>
     <attr name="cardOutlineColor" format="color|reference" />
+    <attr name="navbarColor" format="color|reference" />
+    <attr name="textColorOnAccent" format="color|reference"/>
+    <attr name="dialogBackground" format="color|reference"/>
     <attr name="startStopButtonColor_0" format="color|reference"/>
     <attr name="startStopButtonColor_1" format="color|reference"/>
     <attr name="startStopButtonColor_2" format="color|reference"/>
@@ -15,4 +19,6 @@
     <attr name="textColorDanger" format="color|reference"/>
     <attr name="boostyColor" format="color|reference"/>
     <attr name="telegramColor" format="color|reference"/>
+    <attr name="boostyColorTop" format="color|reference"/>
+    <attr name="boostyColorBottom" format="color|reference"/>
 </resources>

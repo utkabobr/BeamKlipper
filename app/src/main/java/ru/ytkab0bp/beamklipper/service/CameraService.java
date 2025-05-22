@@ -48,6 +48,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Stack;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -71,6 +73,8 @@ public class CameraService extends Service {
 
     private final static int PORT = 8889;
     private final static int ID = 400000;
+
+    private static ExecutorService IO_POOL = Executors.newSingleThreadExecutor();
 
     private NotificationManager notificationManager;
 
@@ -121,8 +125,8 @@ public class CameraService extends Service {
         notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
 
         Notification.Builder not = (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? new Notification.Builder(this, KlipperApp.SERVICES_CHANNEL) : new Notification.Builder(this));
-        not.setContentTitle(getString(R.string.camera_title))
-                .setContentText(getString(R.string.camera_description))
+        not.setContentTitle(getString(R.string.CameraTitle))
+                .setContentText(getString(R.string.CameraDescription))
                 .setSmallIcon(R.drawable.icon_adaptive_foreground)
                 .setOngoing(true);
         notificationManager.notify(ID, not.build());
@@ -162,34 +166,37 @@ public class CameraService extends Service {
                         reader.setOnImageAvailableListener(r -> {
                             Image img = r.acquireLatestImage();
                             if (img == null) return;
-                            ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
-                            ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
-                            ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
 
-                            int ySize = yBuffer.remaining();
-                            int uSize = uBuffer.remaining();
-                            int vSize = vBuffer.remaining();
+                            IO_POOL.submit(()->{
+                                ByteBuffer yBuffer = img.getPlanes()[0].getBuffer();
+                                ByteBuffer uBuffer = img.getPlanes()[1].getBuffer();
+                                ByteBuffer vBuffer = img.getPlanes()[2].getBuffer();
 
-                            int bufSize = ySize + uSize + vSize;
-                            if (bufferSize < bufSize) {
-                                bufferStack.clear();
-                                bufferSize = bufSize;
-                            }
-                            byte[] buffer = bufferStack.isEmpty() ? new byte[bufferSize] : bufferStack.pop();
+                                int ySize = yBuffer.remaining();
+                                int uSize = uBuffer.remaining();
+                                int vSize = vBuffer.remaining();
 
-                            yBuffer.get(buffer, 0, ySize);
-                            vBuffer.get(buffer, ySize, vSize);
-                            uBuffer.get(buffer, ySize + vSize, uSize);
+                                int bufSize = ySize + uSize + vSize;
+                                if (bufferSize < bufSize) {
+                                    bufferStack.clear();
+                                    bufferSize = bufSize;
+                                }
+                                byte[] buffer = bufferStack.isEmpty() ? new byte[bufferSize] : bufferStack.pop();
 
-                            YuvImage yuvImage = new YuvImage(buffer, ImageFormat.NV21, img.getWidth(), img.getHeight(), null);
-                            ByteArrayOutputStream conv = new ByteArrayOutputStream();
-                            yuvImage.compressToJpeg(new Rect(0, 0, img.getWidth(), img.getHeight()), 100, conv);
-                            bufferStack.push(buffer);
+                                yBuffer.get(buffer, 0, ySize);
+                                vBuffer.get(buffer, ySize, vSize);
+                                uBuffer.get(buffer, ySize + vSize, uSize);
 
-                            byte[] converted = conv.toByteArray();
-                            deliverFrame(converted, converted.length, ()-> {});
+                                YuvImage yuvImage = new YuvImage(buffer, ImageFormat.NV21, img.getWidth(), img.getHeight(), null);
+                                ByteArrayOutputStream conv = new ByteArrayOutputStream();
+                                yuvImage.compressToJpeg(new Rect(0, 0, img.getWidth(), img.getHeight()), 100, conv);
+                                bufferStack.push(buffer);
 
-                            img.close();
+                                byte[] converted = conv.toByteArray();
+                                deliverFrame(converted, converted.length, ()-> {});
+
+                                img.close();
+                            });
                         }, cameraHandler);
                         targets.add(reader.getSurface());
                         camera.createCaptureSession(targets, new CameraCaptureSession.StateCallback() {

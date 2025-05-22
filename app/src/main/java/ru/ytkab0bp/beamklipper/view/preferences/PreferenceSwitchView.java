@@ -1,6 +1,8 @@
 package ru.ytkab0bp.beamklipper.view.preferences;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.graphics.Color;
 import android.text.TextUtils;
 import android.util.TypedValue;
 import android.view.Gravity;
@@ -24,7 +26,8 @@ public class PreferenceSwitchView extends LinearLayout {
         super(context);
         setOrientation(HORIZONTAL);
         setGravity(Gravity.CENTER_VERTICAL);
-        setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewUtils.dp(64)));
+        setMinimumHeight(ViewUtils.dp(52));
+        setLayoutParams(new RecyclerView.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT));
         setPadding(ViewUtils.dp(21), ViewUtils.dp(6), ViewUtils.dp(16), ViewUtils.dp(6));
         setBackground(ViewUtils.resolveDrawable(context, android.R.attr.selectableItemBackground));
 
@@ -69,5 +72,20 @@ public class PreferenceSwitchView extends LinearLayout {
             this.subtitle.setVisibility(VISIBLE);
         }
         mSwitch.setChecked(checked);
+        mSwitch.setTrackTintList(new ColorStateList(new int[][] {
+            {android.R.attr.state_checked},
+            {-android.R.attr.state_checked}
+        }, new int[] {
+            ViewUtils.resolveColor(getContext(), android.R.attr.colorAccent),
+            0xFF7F7F7F
+        }));
+
+        mSwitch.setThumbTintList(new ColorStateList(new int[][] {
+                {android.R.attr.state_checked},
+                {-android.R.attr.state_checked}
+        }, new int[] {
+                Color.WHITE,
+                0x44FFFFFF
+        }));
     }
 }

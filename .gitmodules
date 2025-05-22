@@ -16,3 +16,6 @@
 [submodule "app/src/main/moonraker_timelapse"]
 	path = app/src/main/moonraker_timelapse
 	url = https://github.com/utkabobr/moonraker-timelapse
+[submodule "SAPIL"]
+	path = SAPIL
+	url = https://utkabobr@github.com/utkabobr/SAPIL

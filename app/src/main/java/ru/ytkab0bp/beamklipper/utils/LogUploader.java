@@ -93,14 +93,14 @@ public class LogUploader {
                         @Override
                         public void onFailure(Call call, IOException e) {
                             Log.e(TAG, "Failed to upload logs", e);
-                            ViewUtils.postOnMainThread(() -> Toast.makeText(KlipperApp.INSTANCE, R.string.upload_failed, Toast.LENGTH_SHORT).show());
+                            ViewUtils.postOnMainThread(() -> Toast.makeText(KlipperApp.INSTANCE, R.string.UploadFailed, Toast.LENGTH_SHORT).show());
                         }
 
                         @Override
                         public void onResponse(Call call, Response response) throws IOException {
                             if (response.headers().get("Location") != null) {
                                 ViewUtils.postOnMainThread(() -> {
-                                    Toast.makeText(KlipperApp.INSTANCE, R.string.upload_success, Toast.LENGTH_SHORT).show();
+                                    Toast.makeText(KlipperApp.INSTANCE, R.string.UploadSuccess, Toast.LENGTH_SHORT).show();
                                     String loc = response.headers().get("Location");
                                     if (!loc.startsWith("https://")) {
                                         loc = "https://coderus.openrepos.net" + loc;
